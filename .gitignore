@@ -1,0 +1,21 @@
+# MATLAB autosave files
+*.asv
+*.m~
+
+# MATLAB data files (results are typically large)
+*.mat
+
+# Figure files
+*.fig
+*.png
+*.jpg
+*.tif
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Output directories (results should be stored elsewhere)
+output/
+results/

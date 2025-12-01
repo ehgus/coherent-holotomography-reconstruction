@@ -1,0 +1,84 @@
+{
+    "data_path": "F:\\02_project-3D-TGV-analysis\\21_data\\coherent_2025.11.28_smooth-TGV_oil-matching-merged",
+    "output_path": "F:\\02_project-3D-TGV-analysis\\21_data\\coherent_2025.11.28_smooth-TGV_oil-matching-merged",
+    "optical_parameters": {
+        "wavelength": 0.532,
+        "NA": 1.1,
+        "RI_bg": 1.507,
+        "resolution": [0.1, 0.1, 0.1],
+        "resolution_image": [0.192, 0.192],
+        "vector_simulation": true,
+        "use_abbe_sine": true,
+        "use_abbe_correction": true
+    },
+    "processing_parameters": {
+        "cutout_portion": 0.333,
+        "other_corner": false,
+        "conjugate_field": false,
+        "verbose": false,
+        "normalidx": 1,
+        "use_GPU": true
+    },
+    "sample_pairs": [
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.000_sp1_IMAGING",
+            "output_name": "sp1_RI_1.000"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.000_sp2_IMAGING",
+            "output_name": "sp2_RI_1.000"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.490_sp1_IMAGING",
+            "output_name": "sp1_RI_1.490"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.490_sp2_IMAGING",
+            "output_name": "sp2_RI_1.490"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.495_sp1_IMAGING",
+            "output_name": "sp1_RI_1.495"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.495_sp2_IMAGING",
+            "output_name": "sp2_RI_1.495"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.500_sp1_IMAGING",
+            "output_name": "sp1_RI_1.500"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.500_sp2_IMAGING",
+            "output_name": "sp2_RI_1.500"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.505_sp1_IMAGING",
+            "output_name": "sp1_RI_1.505"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.505_sp2_IMAGING",
+            "output_name": "sp2_RI_1.505"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.510_sp1_IMAGING",
+            "output_name": "sp1_RI_1.510"
+        },
+        {
+            "background": "bg_IMAGING",
+            "sample": "immersion_RI_1.510_sp2_IMAGING",
+            "output_name": "sp2_RI_1.510"
+        }
+    ]
+}
