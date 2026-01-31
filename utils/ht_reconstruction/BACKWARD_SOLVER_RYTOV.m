@@ -86,8 +86,5 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
             clear Count
             RI=Reconimg;
         end
-        function [field_trans_f] = refocus(h, field_trans, z) % z is [um]
-            field_trans_f = fftshift(ifft2(ifftshift(fftshift(fft2(ifftshfit(field_trans))) .* exp(z.*h.utility.refocusing_kernel))));
-        end
     end
 end

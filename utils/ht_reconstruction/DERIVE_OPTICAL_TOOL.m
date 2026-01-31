@@ -56,7 +56,6 @@ utility.NA_circle=utility.fourier_space.coorxy<utility.kmax;
 utility.k3=(utility.k0_nm).^2-(utility.fourier_space.coorxy).^2;utility.k3(utility.k3<0)=0;utility.k3=sqrt(utility.k3);
 utility.dV=utility.image_space.res{1}.*utility.image_space.res{2}.*utility.image_space.res{3};
 utility.dVk=1/utility.dV;
-utility.refocusing_kernel=2i*pi*utility.k3;
 utility.cos_theta=utility.k3/utility.k0_nm;
 %move to the gpu the needed arrays (scalar are kept on cpu)
 if use_gpu
@@ -69,7 +68,6 @@ if use_gpu
     utility.fourier_space.coorxy=gpuArray(utility.fourier_space.coorxy);
     utility.NA_circle=gpuArray(utility.NA_circle);
     utility.k3=gpuArray(utility.k3);
-    utility.refocusing_kernel=gpuArray(utility.refocusing_kernel);
     utility.cos_theta=gpuArray(utility.cos_theta);
 end
 
