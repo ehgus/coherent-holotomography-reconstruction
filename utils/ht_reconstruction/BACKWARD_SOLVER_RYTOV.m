@@ -32,11 +32,6 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
             % Expected input: gpuArray of phase values (single precision)
             % Expected output: unwrapped phase on GPU (single precision)
             retPhase=gather(unwrapp2_gpu(gpuArray(single(retPhase))));
-            if h.parameters.verbose
-                for i = 1:size(retPhase,3)
-                    imagesc(retPhase(:,:,i));axis image; drawnow
-                end
-            end
             retAmplitude=abs(output_field);
             thetaSize=size(retPhase,3);
 

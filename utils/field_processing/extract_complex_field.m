@@ -20,7 +20,6 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 %       .cutout_portion - Portion to cut out for centering (0 to 0.5)
 %       .other_corner - Boolean to use other corner
 %       .conjugate_field - Boolean to conjugate fields
-%       .verbose - Boolean for verbose output
 %       .normalidx - Index of normal image
 %       .use_GPU - Boolean to use GPU acceleration
 %

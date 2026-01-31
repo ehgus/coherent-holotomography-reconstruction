@@ -34,7 +34,6 @@ Edit `configuration/field_retrieval_config.json` to specify:
 - **processing_parameters**: Processing options
   - `cutout_portion`: Fourier space cropping (0-0.5, typically 0.333)
   - `use_GPU`: Enable GPU acceleration (true/false)
-  - `verbose`: Show visualization during processing (true/false)
 - **sample_pairs**: Array of background-sample pairs to process
 
 ### 2. Run the Script
@@ -56,7 +55,6 @@ For each sample pair, the script creates a subdirectory in `output_path` contain
 - `amplitude.mat`: Amplitude ratio (|output_field / input_field|)
 - `phase.mat`: Phase difference (angle(output_field / input_field))
 - `k0s.mat`: Peak positions in Fourier space
-- `visualization.png`: (if verbose=true) Visual summary
 
 ## Algorithm
 
@@ -92,8 +90,7 @@ The field retrieval process follows these steps (based on FIELD_EXPERIMENTAL_RET
     },
     "processing_parameters": {
         "cutout_portion": 0.333,
-        "use_GPU": true,
-        "verbose": false
+        "use_GPU": true
     },
     "sample_pairs": [
         {
