@@ -41,11 +41,11 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
             thetaSize=size(retPhase,3);
 
             %preset variables
-            kx_res = h.utility.fourier_space.res{2};
-            ky_res = h.utility.fourier_space.res{1};
+            kx_res = h.utility.fourier_space.res{1};
+            ky_res = h.utility.fourier_space.res{2};
             kz_res = h.utility.fourier_space.res{3};
-            xsize = h.parameters.size(2);
-            ysize = h.parameters.size(1);
+            xsize = h.parameters.size(1);
+            ysize = h.parameters.size(2);
             zsize = h.parameters.size(3);
             halfxsize = floor(xsize/2);
             halfysize = floor(ysize/2);
@@ -57,36 +57,36 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
                 Fbg=fft2(input_field(:,:,i));
                 [~,linear_index] = max(Fbg,[],'all','ComparisonMethod','abs');
                 [mj,mi]=ind2sub(size(Fbg),linear_index);
-                f_dy(i)=mj-ysize*floor(mj/halfysize)-1;
-                f_dx(i)=mi-xsize*floor(mi/halfxsize)-1;
+                f_dx(i)=mj-xsize*floor(mj/halfxsize)-1;
+                f_dy(i)=mi-ysize*floor(mi/halfysize)-1;
             end
             f_dz=round(real(sqrt((h.utility.k0_nm)^2-(f_dx*kx_res).^2-(f_dy*ky_res).^2))/kz_res);
 
             NA_circle = ifftshift(h.utility.NA_circle);
             xind=find(NA_circle);
-            kz=ifftshift(reshape(h.utility.k3,ysize,xsize));
-            fy=[0:floor((ysize-1)/2) -floor((ysize)/2):-1];
+            kz=ifftshift(reshape(h.utility.k3,xsize,ysize));
             fx=[0:floor((xsize-1)/2) -floor((xsize)/2):-1];
+            fy=[0:floor((ysize-1)/2) -floor((ysize)/2):-1];
             fz=round(kz/kz_res);
-            fy=fy(rem(xind-1,xsize)+1)';
-            fx=fx(floor((xind-1)/xsize)+1)';
+            fx=fx(rem(xind-1,xsize)+1)';
+            fy=fy(floor((xind-1)/xsize)+1)';
             fz=fz(xind);
             kz=kz(xind);
 
-            ORytov=gpuArray(zeros(ysize,xsize,zsize,'single'));
-            Count=gpuArray(zeros(ysize,xsize,zsize,'single')); 
+            ORytov=gpuArray(zeros(xsize,ysize,zsize,'single'));
+            Count=gpuArray(zeros(xsize,ysize,zsize,'single')); 
             for i = 1:thetaSize
                 FRytov=squeeze(log(retAmplitude(:,:,i))+1i*retPhase(:,:,i));
                 UsRytov=fft2(FRytov); % unit: (um^2)
                 
-                UsRytov=circshift(UsRytov,[f_dy(i) f_dx(i)]);
+                UsRytov=circshift(UsRytov,[f_dx(i) f_dy(i)]);
                 Fx=f_dx(i)-fx;Fy=f_dy(i)-fy;Fz=f_dz(i)-fz;
                 Uprime=kz/1i.*UsRytov(xind);% unit: (um^1) % kz is spatial frequency, so 2pi is multiplied for wave vector
                 
                 Fx=mod(Fx,xsize)+1;
                 Fy=mod(Fy,ysize)+1;
                 Fz=mod(Fz,zsize)+1;
-                Kzp=sub2ind(size(Count),Fy,Fx,Fz);
+                Kzp=sub2ind(size(Count),Fx,Fy,Fz);
 
                 ORytov(Kzp)=ORytov(Kzp)+Uprime;
                 Count(Kzp)=Count(Kzp)+(Uprime~=0);
