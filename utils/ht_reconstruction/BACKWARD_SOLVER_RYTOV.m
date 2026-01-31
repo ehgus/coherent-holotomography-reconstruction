@@ -25,8 +25,7 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
             assert(h.parameters.size(1) == h.parameters.size(2), 'x/y output size must be isotropic')
             assert(h.parameters.size(1) == size(input_field,1) && h.parameters.size(2) == size(input_field,2), 'declare size in the parameter must be the same as the field size')
             
-            [bg,sp]=vector2scalarfield(input_field,output_field);
-            normalized_field = sp./bg;
+            normalized_field = output_field./input_field;
             retPhase=angle(normalized_field);
             % WARNING: unwrapp2_gpu function is NOT copied to ht_reconstruction.
             % This is a GPU phase unwrapping function from Goldstein branch-cut method.
@@ -55,8 +54,8 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
             %find angle
             f_dx=zeros(thetaSize,1);
             f_dy=zeros(thetaSize,1);
-            for i=1:size(bg,3)
-                Fbg=fft2(bg(:,:,i));
+            for i=1:size(input_field,3)
+                Fbg=fft2(input_field(:,:,i));
                 [~,linear_index] = max(Fbg,[],'all','ComparisonMethod','abs');
                 [mj,mi]=ind2sub(size(Fbg),linear_index);
                 f_dy(i)=mj-ysize*floor(mj/halfysize)-1;
