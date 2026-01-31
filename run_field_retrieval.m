@@ -18,12 +18,8 @@
 clc; clear; close all;
 
 %% Add paths
-current_dir = fileparts(mfilename('fullpath'));
+current_dir = pwd();
 addpath(genpath(current_dir));
-
-% Add preprocessing utilities for loading PNG stacks
-preprocessing_path = fullfile(fileparts(current_dir), '00_preprocessing');
-addpath(genpath(preprocessing_path));
 
 fprintf('Field Retrieval from Experimental Data\n');
 

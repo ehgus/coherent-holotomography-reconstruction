@@ -5,11 +5,14 @@
         "wavelength": 0.532,
         "NA": 1.1,
         "RI_bg": 1.507,
-        "resolution": [0.1, 0.1, 0.1],
+        "resolution": [0.1, 0.1, 0.7],
         "resolution_image": [0.192, 0.192],
         "vector_simulation": true,
         "use_abbe_sine": true,
         "use_abbe_correction": true
+    },
+    "reconstruction_parameters": {
+        "zsize": 220
     },
     "processing_parameters": {
         "cutout_portion": 0.333,
@@ -17,7 +20,7 @@
         "conjugate_field": false,
         "verbose": false,
         "normalidx": 1,
-        "use_GPU": true
+        "use_GPU": false
     },
     "sample_pairs": [
         {
