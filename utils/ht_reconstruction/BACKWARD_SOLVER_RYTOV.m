@@ -4,13 +4,7 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
     end
     methods
         function h=BACKWARD_SOLVER_RYTOV(params)
-            init_params=struct('use_non_negativity',false,'non_negativity_iteration', 100);
-            if nargin==1
-                warning('off','all');
-                init_params=update_struct(init_params, params);
-                warning('on','all');
-            end
-            h@BACKWARD_SOLVER(init_params);
+            h@BACKWARD_SOLVER(params);
         end
         function [RI, ORytov]=solve(h,input_field,output_field)
             warning('off','all');
@@ -90,22 +84,6 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
             Reconimg=gather(fftshift(ifftn(ORytov),3));
             Reconimg = potential2RI(Reconimg*4*pi,h.parameters.wavelength,h.parameters.RI_bg);
             clear Count
-            if h.parameters.use_non_negativity
-                Emask = ifftshift(h.utility.fourier_space.coorxy)<(2*h.parameters.NA/h.parameters.wavelength);
-                Reconimg = gpuArray(fftshift(ifftn(ifftshift(ORytov))));
-                for mm = 1:h.parameters.non_negativity_iteration
-                    Reconimg(real(Reconimg)<0)= 0 + 1i*imag(Reconimg(real(Reconimg)<0));
-                    ORytov_new=fftshift(fftn(ifftshift(Reconimg)));
-                    ORytov_new=Emask.*ORytov_new.*(abs(ORytov)==0)+ORytov;
-                    Reconimg=fftshift(ifftn(ifftshift(ORytov_new)));
-                    %disp([num2str(mm),' / ',num2str(h.parameters.non_negativity_iteration)])
-                end
-                Reconimg(real(Reconimg)<0)= 0 + 1i*imag(Reconimg(real(Reconimg)<0));
-                Reconimg = potential2RI(Reconimg*4*pi,h.parameters.wavelength,h.parameters.RI_bg);
-                ORytov = gather(ORytov);
-                ORytov_new = gather(ORytov_new);
-                Reconimg = gather(Reconimg);
-            end
             RI=Reconimg;
         end
         function [field_trans_f] = refocus(h, field_trans, z) % z is [um]

@@ -159,10 +159,6 @@ for pair_idx = 1:num_pairs
     % Set reconstruction z-size from configuration
     rytov_params.size(3) = config.reconstruction_parameters.zsize;
     
-    % Set reconstruction-specific parameters
-    rytov_params.use_non_negativity = false;
-    rytov_params.non_negativity_iteration = 100;
-    
     % ========================================================================
     % STEP 3: CONVERT FIELDS TO 4D FORMAT FOR RYTOV SOLVER
     % ========================================================================
