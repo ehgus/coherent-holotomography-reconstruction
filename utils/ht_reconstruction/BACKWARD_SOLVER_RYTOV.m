@@ -81,10 +81,8 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
                 Count(Kzp)=Count(Kzp)+(Uprime~=0);
             end
             ORytov(Count>0)=ORytov(Count>0)./Count(Count>0)/kz_res; % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
-            Reconimg=gather(fftshift(ifftn(ORytov),3));
-            Reconimg = potential2RI(Reconimg*4*pi,h.parameters.wavelength,h.parameters.RI_bg);
-            clear Count
-            RI=Reconimg;
+            potential=gather(fftshift(ifftn(ORytov),3));
+            RI = potential2RI(potential*4*pi,h.parameters.wavelength,h.parameters.RI_bg);
         end
     end
 end
