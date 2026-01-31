@@ -4,7 +4,7 @@
 % This script:
 % 1. Loads configuration from field_retrieval_config.json
 % 2. Processes each background-sample pair specified in the configuration
-% 3. Performs field retrieval using process_field_pair() (NOT saved)
+% 3. Performs field retrieval using extract_complex_field() (NOT saved)
 % 4. Applies Rytov reconstruction algorithm
 % 5. Saves only the final Rytov tomograms (RI_rytov.mat) to output directory
 %
@@ -19,7 +19,7 @@
 % Note: Field information is NOT saved to disk. Only the final Rytov tomogram (RI_rytov.mat)
 %       is saved to config.output_path/sample_name/ directory.
 %
-% See also: process_field_pair, BACKWARD_SOLVER_RYTOV
+% See also: extract_complex_field, BACKWARD_SOLVER_RYTOV
 
 clc; clear; close all;
 
@@ -28,7 +28,7 @@ current_dir = pwd();
 addpath(genpath(current_dir));
 
 fprintf('Integrated Field Retrieval and Rytov Tomogram Reconstruction\n');
-fprintf('Pipeline: PNG stacks -> process_field_pair -> BACKWARD_SOLVER_RYTOV -> RI_rytov.mat\n\n');
+fprintf('Pipeline: PNG stacks -> extract_complex_field -> BACKWARD_SOLVER_RYTOV -> RI_rytov.mat\n\n');
 
 %% Load configuration
 [config_file, config_path] = uigetfile('*.json', 'Select configuration file');
@@ -123,12 +123,12 @@ for pair_idx = 1:num_pairs
     end
     
     % ========================================================================
-    % STEP 1: FIELD RETRIEVAL (using process_field_pair - NOT saved)
+    % STEP 1: FIELD RETRIEVAL (using extract_complex_field - NOT saved)
     % ========================================================================
     fprintf(' -> Processing fields');
     tic;
     
-    [output_field, updated_params, k0s] = process_field_pair(...
+    [output_field, updated_params, k0s] = extract_complex_field(...
         background_stack, ...
         sample_stack, ...
         config.optical_parameters, ...
@@ -167,7 +167,7 @@ for pair_idx = 1:num_pairs
     % ========================================================================
     % STEP 3: CONVERT FIELDS TO 4D FORMAT FOR RYTOV SOLVER
     % ========================================================================
-    % process_field_pair returns 3D fields [H x W x N]
+    % extract_complex_field returns 3D fields [H x W x N]
     % BACKWARD_SOLVER_RYTOV.solve() requires 4D fields [H x W x 1 x N]
     
     [H, W, N] = size(input_field);

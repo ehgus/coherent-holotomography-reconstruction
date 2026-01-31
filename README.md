@@ -11,7 +11,7 @@ This directory contains scripts and functions for performing field retrieval fro
 │   └── field_retrieval_config.json # Configuration file
 ├── utils/
 │   └── field_processing/
-│       ├── process_field_pair.m         # Core field processing function
+│       ├── extract_complex_field.m         # Core field processing function
 │       ├── save_field_results.m         # Save results to disk
 │       └── visualize_field_results.m    # Visualization utilities
 └── README.md

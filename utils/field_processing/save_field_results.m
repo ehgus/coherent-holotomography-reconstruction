@@ -19,7 +19,7 @@ function save_field_results(input_field, output_field, output_path, sample_name,
 %       - amplitude.mat: Amplitude (abs(output_field/input_field))
 %       - phase.mat: Phase (angle(output_field/input_field))
 %
-% See also: process_field_pair
+% See also: extract_complex_field
 
     % Create output directory
     sample_output_path = fullfile(output_path, sample_name);

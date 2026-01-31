@@ -1,8 +1,8 @@
-function [field, optical_params, illum_k0] = process_field_pair(background_stack, sample_stack, optical_params, processing_params)
-% PROCESS_FIELD_PAIR Process background and sample field pairs for field retrieval
+function [field, optical_params, illum_k0] = extract_complex_field(background_stack, sample_stack, optical_params, processing_params)
+% extract_complex_field Process background and sample field pairs for field retrieval
 %
 % Syntax:
-%   [field, updated_params, illum_k0] = process_field_pair(background_stack, sample_stack, optical_params, processing_params)
+%   [field, updated_params, illum_k0] = extract_complex_field(background_stack, sample_stack, optical_params, processing_params)
 %
 % Inputs:
 %   background_stack - 3D array of background images [height, width, num_images]
