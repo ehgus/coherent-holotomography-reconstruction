@@ -1,8 +1,8 @@
-function [input_field, output_field, updated_params, k0s] = process_field_pair(background_stack, sample_stack, optical_params, processing_params)
+function [field, optical_params, illum_k0] = process_field_pair(background_stack, sample_stack, optical_params, processing_params)
 % PROCESS_FIELD_PAIR Process background and sample field pairs for field retrieval
 %
 % Syntax:
-%   [input_field, output_field, updated_params, k0s] = process_field_pair(background_stack, sample_stack, optical_params, processing_params)
+%   [field, updated_params, illum_k0] = process_field_pair(background_stack, sample_stack, optical_params, processing_params)
 %
 % Inputs:
 %   background_stack - 3D array of background images [height, width, num_images]
@@ -25,10 +25,9 @@ function [input_field, output_field, updated_params, k0s] = process_field_pair(b
 %       .use_GPU - Boolean to use GPU acceleration
 %
 % Outputs:
-%   input_field - Processed background field
-%   output_field - Processed sample field
+%   field - Processed sample field
 %   updated_params - Updated optical parameters
-%   k0s - Peak positions in Fourier space [2 x num_images]
+%   illum_k0 - Peak positions in Fourier space [2 x num_images]
 %
 % Description:
 %   This function performs the core field retrieval processing based on
@@ -132,15 +131,15 @@ function [input_field, output_field, updated_params, k0s] = process_field_pair(b
     input_field = input_field .* shifted_NA_circle;
     output_field = output_field .* shifted_NA_circle;
 
-    % Optional: Find peaks for k0s
+    % Optional: Find peaks for illum_k0
     if nargout >= 4
-        k0s = zeros(2, size(input_field, 3));
+        illum_k0 = zeros(2, size(input_field, 3));
         for jj = 1:size(input_field, 3)
             shifted_input_field = fftshift(input_field(:, :, jj));
             [~, max_idx] = max(abs(shifted_input_field(:)));
             [y_pos, x_pos] = ind2sub([xsize, ysize], max_idx);
-            k0s(1, jj) = y_pos - floor(xsize/2) - 1;
-            k0s(2, jj) = x_pos - floor(ysize/2) - 1;
+            illum_k0(1, jj) = y_pos - floor(xsize/2) - 1;
+            illum_k0(2, jj) = x_pos - floor(ysize/2) - 1;
         end
     end
 
@@ -148,36 +147,24 @@ function [input_field, output_field, updated_params, k0s] = process_field_pair(b
     input_field = ifft2(input_field);
     output_field = ifft2(output_field);
 
-    % Crop edges
-    input_field = input_field(3:(end-2), 3:(end-2), :);
-    output_field = output_field(3:(end-2), 3:(end-2), :);
-    optical_params.size(1) = size(input_field, 1);
-    optical_params.size(2) = size(input_field, 2);
-
-    % Conjugate if needed
+    % Step 6: Phase correction
+    field = output_field ./ input_field;
     if processing_params.conjugate_field
-        input_field = conj(input_field);
-        output_field = conj(output_field);
+        field = conj(field);
     end
 
-    % Step 6: Phase correction
-    output_field = output_field ./ input_field;
+    % Crop edges
+    field = field(3:(end-2), 3:(end-2), :);
+    optical_params.size(1) = size(field, 1);
+    optical_params.size(2) = size(field, 2);
 
     % Subpixel phase shift correction
-    for jj = 1:size(output_field, 3)
-        output_field(:, :, jj) = remove_abs_phase(output_field(:, :, jj));
+    for jj = 1:size(field, 3)
+        field(:, :, jj) = remove_abs_phase(field(:, :, jj));
     end
 
     % Update parameters for output
-    updated_params = struct(...
-        'size', optical_params.size, ...
-        'wavelength', optical_params.wavelength, ...
-        'NA', optical_params.NA, ...
-        'RI_bg', optical_params.RI_bg, ...
-        'resolution', optical_params.resolution, ...
-        'vector_simulation', optical_params.vector_simulation, ...
-        'use_abbe_sine', optical_params.use_abbe_sine, ...
-        'use_GPU', processing_params.use_GPU);
+    optical_params.use_GPU = processing_params.use_GPU;
 end
 
 function complex_phase = remove_abs_phase(complex_phase)
