@@ -13,7 +13,7 @@ function visualize_field_results(input_field, output_field, slice_idx)
 %   Creates a figure showing the amplitude and phase of the field ratio
 %   (output_field / input_field) for a specified slice.
 %
-% See also: extract_complex_field, save_field_results
+% See also: extract_complex_field
 
     if nargin < 3
         slice_idx = round(size(input_field, 4) / 2);

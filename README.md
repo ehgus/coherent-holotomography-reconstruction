@@ -12,7 +12,6 @@ rytov_solver-matlab/
 ├── utils/
 │   ├── field_processing/
 │   │   ├── extract_complex_field.m         # Core field retrieval function
-│   │   ├── save_field_results.m            # Save results to disk
 │   │   └── visualize_field_results.m       # Visualization utilities
 │   ├── ht_reconstruction/
 │   │   ├── BACKWARD_SOLVER_RYTOV.m         # Rytov reconstruction solver
