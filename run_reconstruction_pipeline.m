@@ -6,7 +6,7 @@
 % 2. Processes each background-sample pair specified in the configuration
 % 3. Performs field retrieval using extract_complex_field() (NOT saved)
 % 4. Applies Rytov reconstruction algorithm
-% 5. Saves only the final Rytov tomograms (RI_rytov.mat) to output directory
+% 5. Saves only the final Rytov tomograms (RI.mat) to output directory
 %
 % Configuration file should contain:
 %   - data_path: Path to merged PNG stack data
@@ -16,7 +16,7 @@
 %   - reconstruction_parameters: Reconstruction options (zsize)
 %   - sample_pairs: Array of background-sample pairs to process
 %
-% Note: Field information is NOT saved to disk. Only the final Rytov tomogram (RI_rytov.mat)
+% Note: Field information is NOT saved to disk. Only the final Rytov tomogram (RI.mat)
 %       is saved to config.output_path/sample_name/ directory.
 %
 % See also: extract_complex_field, BACKWARD_SOLVER_RYTOV
@@ -28,7 +28,7 @@ current_dir = pwd();
 addpath(genpath(current_dir));
 
 fprintf('Integrated Field Retrieval and Rytov Tomogram Reconstruction\n');
-fprintf('Pipeline: PNG stacks -> extract_complex_field -> BACKWARD_SOLVER_RYTOV -> RI_rytov.mat\n\n');
+fprintf('Pipeline: PNG stacks -> extract_complex_field -> BACKWARD_SOLVER_RYTOV -> RI.mat\n\n');
 
 %% Load configuration
 [config_file, config_path] = uigetfile('*.json', 'Select configuration file');
@@ -73,10 +73,10 @@ for pair_idx = 1:num_pairs
     
     % Check if Rytov result already exists
     output_dir = fullfile(config.output_path, current_pair.output_name);
-    rytov_file = fullfile(output_dir, 'RI_rytov.mat');
+    rytov_file = fullfile(output_dir, 'RI.mat');
     
     if exist(rytov_file, 'file')
-        fprintf(' - Skipped (RI_rytov.mat already exists)\n');
+        fprintf(' - Skipped (RI.mat already exists)\n');
         continue;
     end
     
@@ -128,6 +128,9 @@ for pair_idx = 1:num_pairs
     fprintf(' -> Processing fields');
     tic;
     
+    % output_field: 3D [height x width x num_images] complex array
+    % updated_params: updated optical parameters after field retrieval
+    % k0s: wavenumber information for each illumination angle
     [output_field, updated_params, k0s] = extract_complex_field(...
         background_stack, ...
         sample_stack, ...
@@ -137,8 +140,7 @@ for pair_idx = 1:num_pairs
     % Clear stacks to save memory
     clear background_stack sample_stack;
     
-    % Note: input_field, output_field are 3D [height x width x num_images]
-    %       They are NOT saved to disk
+
     
     % ========================================================================
     % STEP 2: PREPARE RYTOV PARAMETERS
@@ -158,33 +160,21 @@ for pair_idx = 1:num_pairs
     
     % Set reconstruction z-size from configuration
     rytov_params.size(3) = config.reconstruction_parameters.zsize;
-    
+
     % ========================================================================
-    % STEP 3: CONVERT FIELDS TO 4D FORMAT FOR RYTOV SOLVER
-    % ========================================================================
-    % extract_complex_field returns 3D fields [H x W x N]
-    % BACKWARD_SOLVER_RYTOV.solve() requires 4D fields [H x W x 1 x N]
-    
-    [H, W, N] = size(input_field);
-    input_field_4d = reshape(input_field, H, W, 1, N);
-    output_field_4d = reshape(output_field, H, W, 1, N);
-    
-    clear input_field output_field;
-    
-    % ========================================================================
-    % STEP 4: PERFORM RYTOV RECONSTRUCTION
+    % STEP 3: PERFORM RYTOV RECONSTRUCTION
     % ========================================================================
     fprintf(' -> Executing Rytov solver');
     
     % Create Rytov solver and perform reconstruction
     rytov_solver = BACKWARD_SOLVER_RYTOV(rytov_params);
-    [RI_rytov, ~] = rytov_solver.solve(input_field_4d, output_field_4d);
+    [RI, ~] = rytov_solver.solve(output_field);
     
     % Clear field data to save memory
-    clear input_field_4d output_field_4d updated_params k0s;
+    clear output_field updated_params k0s;
     
     % ========================================================================
-    % STEP 5: SAVE RESULTS
+    % STEP 4: SAVE RESULTS
     % ========================================================================
     fprintf(' -> Saving results');
     
@@ -194,12 +184,12 @@ for pair_idx = 1:num_pairs
     end
     
     % Save Rytov reconstruction result ONLY (no field data saved)
-    save(rytov_file, 'RI_rytov', '-v7.3');
+    save(rytov_file, 'RI', '-v7.3');
     
     elapsed_time = toc;
     
     % Clear large variables to free memory
-    clear RI_rytov;
+    clear RI;
     
     fprintf(' - Done (%.1fs)\n', elapsed_time);
 end
@@ -207,6 +197,5 @@ end
 %% Summary
 fprintf('\n========================================\n');
 fprintf('Complete. Results saved to: %s\n', config.output_path);
-fprintf('Files saved: RI_rytov.mat (Rytov tomogram only)\n');
-fprintf('Note: Field data (input_field, output_field, parameters) are NOT saved\n');
+fprintf('Files saved: RI.mat (Rytov tomogram only)\n');
 fprintf('========================================\n');
