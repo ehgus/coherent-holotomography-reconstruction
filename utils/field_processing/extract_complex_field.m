@@ -130,16 +130,14 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     input_field = input_field .* shifted_NA_circle;
     output_field = output_field .* shifted_NA_circle;
 
-    % Optional: Find peaks for illum_k0
-    if nargout >= 4
-        illum_k0 = zeros(2, size(input_field, 3));
-        for jj = 1:size(input_field, 3)
-            shifted_input_field = fftshift(input_field(:, :, jj));
-            [~, max_idx] = max(abs(shifted_input_field(:)));
-            [y_pos, x_pos] = ind2sub([xsize, ysize], max_idx);
-            illum_k0(1, jj) = y_pos - floor(xsize/2) - 1;
-            illum_k0(2, jj) = x_pos - floor(ysize/2) - 1;
-        end
+    % Find peaks for illum_k0
+    illum_k0 = zeros(2, size(input_field, 3));
+    for jj = 1:size(input_field, 3)
+        shifted_input_field = fftshift(input_field(:, :, jj));
+        [~, max_idx] = max(abs(shifted_input_field(:)));
+        [y_pos, x_pos] = ind2sub([xsize, ysize], max_idx);
+        illum_k0(1, jj) = y_pos - floor(xsize/2) - 1;
+        illum_k0(2, jj) = x_pos - floor(ysize/2) - 1;
     end
 
     % Step 5: Convert to real space
