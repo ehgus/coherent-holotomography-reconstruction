@@ -11,8 +11,7 @@ rytov_solver-matlab/
 │   └── field_retrieval_config.json # Configuration file
 ├── utils/
 │   ├── field_processing/
-│   │   ├── extract_complex_field.m         # Core field retrieval function
-│   │   └── visualize_field_results.m       # Visualization utilities
+│   │   └── extract_complex_field.m         # Core field retrieval function
 │   ├── ht_reconstruction/
 │   │   ├── BACKWARD_SOLVER_RYTOV.m         # Rytov reconstruction solver
 │   │   ├── BACKWARD_SOLVER.m               # Standard reconstruction solver
