@@ -57,10 +57,16 @@ Edit `configuration/field_retrieval_config.json` to specify:
   - `RI_bg`: Background refractive index (e.g., 1.336)
   - `resolution`: [dx, dy, dz] spatial resolution in microns
   - `resolution_image`: [dx, dy] image pixel size in microns
+  - `crop_offset_micron`: [x, y] center offset in microns for FOV cropping
+  - `crop_fov_micron`: [x, y] field-of-view size in microns for cropping
   - `vector_simulation`: Enable vector simulation (true/false)
   - `use_abbe_sine`: Use Abbe sine condition (true/false)
+  - `use_abbe_correction`: Use Abbe correction (true/false)
 - **processing_parameters**: Processing options
   - `cutout_portion`: Fourier space cropping (0-0.5, typically 0.333)
+  - `other_corner`: Use other FFT corner for peak search (true/false)
+  - `conjugate_field`: Conjugate the retrieved field (true/false)
+  - `normalidx`: Index of normal image for centering (1-based)
   - `use_GPU`: Enable GPU acceleration (true/false)
 - **reconstruction_parameters**: Reconstruction options
   - `zsize`: Z-dimension size for 3D reconstruction volume
@@ -94,6 +100,7 @@ The reconstruction pipeline follows these steps:
 3. **Resampling**: Resize to match desired spatial resolution
 4. **NA Filtering**: Apply numerical aperture mask
 5. **Inverse Transform**: Convert back to real space
+6. **FOV Cropping**: Crop to the requested field-of-view in microns
 6. **Phase Unwrapping**: Remove 2π phase discontinuities
 7. **Phase Correction**: Remove linear phase tilts
 
@@ -122,12 +129,18 @@ The reconstruction pipeline follows these steps:
         "NA": 1.2,
         "RI_bg": 1.336,
         "resolution": [0.1, 0.1, 0.1],
-        "resolution_image": [0.1, 0.1],
+        "resolution_image": [0.048, 0.192],
+        "crop_offset_micron": [10, 10],
+        "crop_fov_micron": [150, 150],
         "vector_simulation": false,
-        "use_abbe_sine": true
+        "use_abbe_sine": true,
+        "use_abbe_correction": true
     },
     "processing_parameters": {
         "cutout_portion": 0.333,
+        "other_corner": false,
+        "conjugate_field": false,
+        "normalidx": 1,
         "use_GPU": true
     },
     "reconstruction_parameters": {

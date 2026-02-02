@@ -103,24 +103,16 @@ for pair_idx = 1:num_pairs
     
     % Crop to make square (X and Y dimensions equal)
     [height, width, num_images] = size(background_stack);
-    if height ~= width
-        min_size = min(height, width);
-        if height > width
-            % Crop height (rows)
-            crop_amount = height - min_size;
-            crop_top = floor(crop_amount / 2);
-            crop_bottom = crop_amount - crop_top;
-            background_stack = background_stack(crop_top+1:end-crop_bottom, :, :);
-            sample_stack = sample_stack(crop_top+1:end-crop_bottom, :, :);
-        else
-            % Crop width (columns)
-            crop_amount = width - min_size;
-            crop_left = floor(crop_amount / 2);
-            crop_right = crop_amount - crop_left;
-            background_stack = background_stack(:, crop_left+1:end-crop_right, :);
-            sample_stack = sample_stack(:, crop_left+1:end-crop_right, :);
-        end
-    end
+    offset = config.optical_parameters.crop_offset_micron;
+    fov = config.optical_parameters.crop_fov_micron;
+    img_resolution = config.optical_parameters.resolution_image;
+    img_pixel_size = [size(sample_stack, 1); size(sample_stack, 2)];
+
+    fov_min = round((offset - fov/2)./img_resolution + img_pixel_size/2);
+    fov_max = round((offset + fov/2)./img_resolution + img_pixel_size/2);
+
+    background_stack = background_stack(fov_min(1):fov_max(1),fov_min(2):fov_max(2),:);
+    sample_stack = sample_stack(fov_min(1):fov_max(1),fov_min(2):fov_max(2),:);
     
     % ========================================================================
     % STEP 1: FIELD RETRIEVAL (using extract_complex_field - NOT saved)
@@ -131,7 +123,7 @@ for pair_idx = 1:num_pairs
     % output_field: 3D [height x width x num_images] complex array
     % updated_params: updated optical parameters after field retrieval
     % k0s: wavenumber information for each illumination angle
-    [output_field, updated_params, k0s] = extract_complex_field(...
+    [output_field, updated_params, illum_k0] = extract_complex_field(...
         background_stack, ...
         sample_stack, ...
         config.optical_parameters, ...
@@ -171,7 +163,7 @@ for pair_idx = 1:num_pairs
     [RI, ~] = rytov_solver.solve(output_field);
     
     % Clear field data to save memory
-    clear output_field updated_params k0s;
+    clear output_field updated_params illum_k0;
     
     % ========================================================================
     % STEP 4: SAVE RESULTS

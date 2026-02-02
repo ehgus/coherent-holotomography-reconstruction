@@ -39,12 +39,6 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     % Input validation
     assert(isequal(size(background_stack), size(sample_stack)), ...
         'Background and sample fields must be of same size');
-    assert(optical_params.resolution_image(1) == optical_params.resolution_image(2), ...
-        'Image resolution must be isotropic');
-    assert(optical_params.resolution(1) == optical_params.resolution(2), ...
-        'Output resolution must be isotropic');
-    assert(0 < processing_params.cutout_portion && processing_params.cutout_portion < 0.5, ...
-        'Cutout portion should be in (0, 0.5)');
 
     % Convert to single for processing
     input_field = single(background_stack);
@@ -69,13 +63,9 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
         'Normal index should be a valid z index');
 
     search_band_1 = round(xsize*(1/2 - processing_params.cutout_portion)):round(xsize/2);
-    if processing_params.other_corner
-        search_band_1 = round(xsize/2):round(xsize*(1/2 + processing_params.cutout_portion));
-    end
-    search_band_2 = round(ysize*(1/2 - processing_params.cutout_portion)):round(ysize/2);
 
-    normal_bg = zeros(xsize, round(ysize/2));
-    normal_bg(search_band_1, search_band_2) = input_field(search_band_1, search_band_2, processing_params.normalidx);
+    normal_bg = zeros(xsize, ysize);
+    normal_bg(search_band_1, :) = input_field(search_band_1, :, processing_params.normalidx);
 
     [~, linear_index] = max(abs(normal_bg(:)));
     [center_pos_1, center_pos_2] = ind2sub(size(normal_bg), linear_index);
@@ -84,41 +74,13 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     input_field = circshift(input_field, peak2origin);
     output_field = circshift(output_field, peak2origin);
 
-    % Step 3: Resize to match desired resolution
-    old_xsize = xsize;
-    old_ysize = ysize;
-    resolution_ratio = optical_params.resolution(1:2) ./ optical_params.resolution_image(1:2);
-    xsize = 2 * round(old_xsize / resolution_ratio(1) / 2);
-    ysize = 2 * round(old_ysize / resolution_ratio(2) / 2);
-
-    if xsize ~= old_xsize || ysize ~= old_ysize
-        old_field = {input_field, output_field};
-        new_field = {zeros(xsize, ysize, zsize), zeros(xsize, ysize, zsize)};
-        half_xsize = floor(min([old_xsize, xsize]) / 2);
-        half_ysize = floor(min([old_ysize, ysize]) / 2);
-
-        for i = 1:2
-            new_field{i}(1:half_xsize, 1:half_ysize, :) = old_field{i}(1:half_xsize, 1:half_ysize, :);
-            new_field{i}(1:half_xsize, end-half_ysize+1:end, :) = old_field{i}(1:half_xsize, end-half_ysize+1:end, :);
-            new_field{i}(end-half_xsize+1:end, 1:half_ysize, :) = old_field{i}(end-half_xsize+1:end, 1:half_ysize, :);
-            new_field{i}(end-half_xsize+1:end, end-half_ysize+1:end, :) = old_field{i}(end-half_xsize+1:end, end-half_ysize+1:end, :);
-        end
-
-        clear old_field
-
-        input_field = new_field{1};
-        output_field = new_field{2};
-        optical_params.resolution(1) = optical_params.resolution_image(1) * old_xsize / xsize;
-        optical_params.resolution(2) = optical_params.resolution_image(2) * old_ysize / ysize;
-    end
-
-    % Step 4: Create NA circle and crop
+    % Step 3: Create NA circle and crop
     optical_params.size = [xsize, ysize, zsize];
 
     % Create frequency coordinates
-    kmax = optical_params.NA / optical_params.wavelength;
-    dx = optical_params.resolution(1);
-    dy = optical_params.resolution(2);
+    kmax = optical_params.NA / optical_params.wavelength ;
+    dx = optical_params.resolution_image(1);
+    dy = optical_params.resolution_image(2);
 
     fx = (-xsize/2:xsize/2-1) / (xsize * dx);
     fy = (-ysize/2:ysize/2-1) / (ysize * dy);
@@ -132,12 +94,11 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 
     % Find peaks for illum_k0
     illum_k0 = zeros(2, size(input_field, 3));
+    [~, max_indices] = max(abs(input_field), [], [1, 2], 'linear');
     for jj = 1:size(input_field, 3)
-        shifted_input_field = fftshift(input_field(:, :, jj));
-        [~, max_idx] = max(abs(shifted_input_field(:)));
-        [y_pos, x_pos] = ind2sub([xsize, ysize], max_idx);
-        illum_k0(1, jj) = y_pos - floor(xsize/2) - 1;
-        illum_k0(2, jj) = x_pos - floor(ysize/2) - 1;
+        [y_pos, x_pos, ~] = ind2sub(size(input_field(:, :, jj)), max_indices(jj));
+        illum_k0(1, jj) = mod(y_pos + floor(xsize/2) - 1, xsize) - floor(xsize/2);
+        illum_k0(2, jj) = mod(x_pos + floor(ysize/2) - 1, ysize) - floor(ysize/2);
     end
 
     % Step 5: Convert to real space
@@ -149,11 +110,6 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     if processing_params.conjugate_field
         field = conj(field);
     end
-
-    % Crop edges
-    field = field(3:(end-2), 3:(end-2), :);
-    optical_params.size(1) = size(field, 1);
-    optical_params.size(2) = size(field, 2);
 
     % Subpixel phase shift correction
     for jj = 1:size(field, 3)
@@ -170,8 +126,13 @@ function complex_phase = remove_abs_phase(complex_phase)
     illum_angle_map_y = angle(circshift(complex_phase,1,2)./complex_phase);
 
     % Correct absolute phase
-    naive_bg_mask = abs(illum_angle_map_x) < std(illum_angle_map_x,1,'all') & ...
-                    abs(illum_angle_map_y) < std(illum_angle_map_y,1,'all');
-    abs_angle = angle(mean(complex_phase(naive_bg_mask),'all'));
+    naive_bg_mask = abs(illum_angle_map_x) < std(illum_angle_map_x,1,'all')/3 & ...
+                    abs(illum_angle_map_y) < std(illum_angle_map_y,1,'all')/3 & ...
+                    abs(complex_phase) < 1.2 & ...
+                    abs(complex_phase) > 0.8;
+    abs_angle = zeros(1,1,size(complex_phase,3));
+    for idx = 1:length(abs_angle)
+        abs_angle(idx) = angle(mean(complex_phase(naive_bg_mask(:,:,idx))));
+    end
     complex_phase = complex_phase .* exp(-1i * abs_angle);
 end

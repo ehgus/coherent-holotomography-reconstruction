@@ -6,7 +6,9 @@
         "NA": 1.1,
         "RI_bg": 1.507,
         "resolution": [0.1, 0.1, 0.7],
-        "resolution_image": [0.192, 0.192],
+        "resolution_image": [0.048, 0.192],
+        "crop_offset_micron": [10, 10],
+        "crop_fov_micron": [150, 150],
         "vector_simulation": true,
         "use_abbe_sine": true,
         "use_abbe_correction": true
