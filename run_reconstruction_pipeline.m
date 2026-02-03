@@ -2,7 +2,7 @@
 % Script to perform field retrieval followed by Rytov reconstruction in a single pipeline
 %
 % This script:
-% 1. Loads configuration from field_retrieval_config.json
+% 1. Loads configuration from JSON file (e.g., smooth_TGV.json)
 % 2. Processes each background-sample pair specified in the configuration
 % 3. Performs field retrieval using extract_complex_field() (NOT saved)
 % 4. Applies Rytov reconstruction algorithm
@@ -11,9 +11,9 @@
 % Configuration file should contain:
 %   - data_path: Path to merged PNG stack data
 %   - output_path: Path for saving Rytov reconstruction results
-%   - optical_parameters: Optical system parameters (wavelength, NA, RI, etc.)
-%   - processing_parameters: Processing options (cutout_portion, GPU usage, etc.)
-%   - reconstruction_parameters: Reconstruction options (zsize)
+%   - imaging_condition: Imaging parameters (wavelength, NA, RI_bg, resolution_image)
+%   - field_generator_condition: Field processing options (cutout_portion, crop settings, etc.)
+%   - tomography_generator_condition: Reconstruction options (resolution, zsize_micron)
 %   - sample_pairs: Array of background-sample pairs to process
 %
 % Note: Field information is NOT saved to disk. Only the final Rytov tomogram (RI.mat)
@@ -44,8 +44,8 @@ config_text = fileread(config_filepath);
 config = jsondecode(config_text);
 
 % Validate configuration
-required_fields = {'data_path', 'output_path', 'optical_parameters', ...
-                   'processing_parameters', 'reconstruction_parameters', 'sample_pairs'};
+required_fields = {'data_path', 'output_path', 'imaging_condition', ...
+                   'field_generator_condition', 'tomography_generator_condition', 'sample_pairs'};
 for i = 1:length(required_fields)
     if ~isfield(config, required_fields{i})
         error('Configuration missing required field: %s', required_fields{i});
@@ -53,8 +53,8 @@ for i = 1:length(required_fields)
 end
 
 % Validate reconstruction parameters
-if ~isfield(config.reconstruction_parameters, 'zsize')
-    error('Configuration missing required field: reconstruction_parameters.zsize');
+if ~isfield(config.tomography_generator_condition, 'zsize_micron')
+    error('Configuration missing required field: tomography_generator_condition.zsize_micron');
 end
 
 fprintf('Processing %d sample pair(s)...\n', length(config.sample_pairs));
@@ -103,9 +103,9 @@ for pair_idx = 1:num_pairs
     
     % Crop to make square (X and Y dimensions equal)
     [height, width, num_images] = size(background_stack);
-    offset = config.optical_parameters.crop_offset_micron;
-    fov = config.optical_parameters.crop_fov_micron;
-    img_resolution = config.optical_parameters.resolution_image;
+    offset = config.field_generator_condition.crop_offset_micron;
+    fov = config.field_generator_condition.crop_fov_micron;
+    img_resolution = config.imaging_condition.resolution;
     img_pixel_size = [size(sample_stack, 1); size(sample_stack, 2)];
 
     fov_min = round((offset - fov/2)./img_resolution + img_pixel_size/2);
@@ -126,13 +126,10 @@ for pair_idx = 1:num_pairs
     [output_field, updated_params, illum_k0] = extract_complex_field(...
         background_stack, ...
         sample_stack, ...
-        config.optical_parameters, ...
-        config.processing_parameters);
-    
+        config.imaging_condition, ...
+        config.field_generator_condition);
     % Clear stacks to save memory
     clear background_stack sample_stack;
-    
-
     
     % ========================================================================
     % STEP 2: PREPARE RYTOV PARAMETERS
@@ -146,12 +143,11 @@ for pair_idx = 1:num_pairs
     rytov_params.NA = updated_params.NA;
     rytov_params.RI_bg = updated_params.RI_bg;
     rytov_params.resolution = updated_params.resolution;
-    rytov_params.vector_simulation = updated_params.vector_simulation;
-    rytov_params.use_abbe_sine = updated_params.use_abbe_sine;
     rytov_params.use_GPU = updated_params.use_GPU;
     
-    % Set reconstruction z-size from configuration
-    rytov_params.size(3) = config.reconstruction_parameters.zsize;
+    % Set reconstruction resolution and z-size from configuration
+    rytov_params.resolution = config.tomography_generator_condition.resolution;
+    rytov_params.size(3) = round(config.tomography_generator_condition.zsize_micron / rytov_params.resolution(3));
 
     % ========================================================================
     % STEP 3: PERFORM RYTOV RECONSTRUCTION

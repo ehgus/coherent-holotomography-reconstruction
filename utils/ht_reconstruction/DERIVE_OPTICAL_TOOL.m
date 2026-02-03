@@ -1,7 +1,4 @@
-function utility = DERIVE_OPTICAL_TOOL(params,use_gpu)
-if nargin==1
-    use_gpu=false;
-end
+function utility = DERIVE_OPTICAL_TOOL(params)
 utility=struct;
 %image space
 utility.image_space=struct;
@@ -57,19 +54,4 @@ utility.k3=(utility.k0_nm).^2-(utility.fourier_space.coorxy).^2;utility.k3(utili
 utility.dV=utility.image_space.res{1}.*utility.image_space.res{2}.*utility.image_space.res{3};
 utility.dVk=1/utility.dV;
 utility.cos_theta=utility.k3/utility.k0_nm;
-%move to the gpu the needed arrays (scalar are kept on cpu)
-if use_gpu
-    utility.image_space.coor{1}=gpuArray(utility.image_space.coor{1});
-    utility.image_space.coor{2}=gpuArray(utility.image_space.coor{2});
-    utility.image_space.coor{3}=gpuArray(utility.image_space.coor{3});
-    utility.fourier_space.coor{1}=gpuArray(utility.fourier_space.coor{1});
-    utility.fourier_space.coor{2}=gpuArray(utility.fourier_space.coor{2});
-    utility.fourier_space.coor{3}=gpuArray(utility.fourier_space.coor{3});
-    utility.fourier_space.coorxy=gpuArray(utility.fourier_space.coorxy);
-    utility.NA_circle=gpuArray(utility.NA_circle);
-    utility.k3=gpuArray(utility.k3);
-    utility.cos_theta=gpuArray(utility.cos_theta);
 end
-
-end
-

@@ -1,27 +1,23 @@
 {
     "data_path": "F:\\02_project-3D-TGV-analysis\\21_data\\coherent_2025.11.28_smooth-TGV_oil-matching-merged",
     "output_path": "F:\\02_project-3D-TGV-analysis\\21_data\\coherent_2025.11.28_smooth-TGV_oil-matching-merged",
-    "optical_parameters": {
+    "imaging_condition": {
         "wavelength": 0.532,
         "NA": 1.1,
         "RI_bg": 1.507,
-        "resolution": [0.1, 0.1, 0.7],
-        "resolution_image": [0.048, 0.192],
-        "crop_offset_micron": [10, 10],
-        "crop_fov_micron": [150, 150],
-        "vector_simulation": true,
-        "use_abbe_sine": true,
-        "use_abbe_correction": true
+        "resolution_image": [0.048, 0.192]
     },
-    "reconstruction_parameters": {
-        "zsize": 220
-    },
-    "processing_parameters": {
+    "field_generator_condition": {
         "cutout_portion": 0.333,
         "other_corner": false,
         "conjugate_field": false,
         "normalidx": 1,
-        "use_GPU": false
+        "crop_offset_micron": [10, 10],
+        "crop_fov_micron": [150, 150]
+    },
+    "tomography_generator_condition": {
+        "resolution": [0.1, 0.1, 0.7],
+        "zsize_micron": 154
     },
     "sample_pairs": [
         {

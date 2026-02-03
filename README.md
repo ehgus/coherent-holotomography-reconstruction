@@ -7,8 +7,8 @@ This directory contains scripts and functions for performing field retrieval fro
 ```
 rytov_solver-matlab/
 ├── run_reconstruction_pipeline.m   # Main script (Field Retrieval + Rytov Reconstruction)
-├── configuration/
-│   └── field_retrieval_config.json # Configuration file
+├── config/
+│   └── smooth_TGV.json             # Configuration file
 ├── utils/
 │   ├── field_processing/
 │   │   └── extract_complex_field.m         # Core field retrieval function
@@ -47,29 +47,25 @@ The pipeline performs two main steps:
 
 ### 1. Configure Parameters
 
-Edit `configuration/field_retrieval_config.json` to specify:
+Edit `config/smooth_TGV.json` (or create your own configuration file) to specify:
 
 - **data_path**: Path to merged PNG stack data (output from 00_preprocessing)
 - **output_path**: Directory where results will be saved
-- **optical_parameters**: System parameters
+- **imaging_condition**: Imaging system parameters
   - `wavelength`: Illumination wavelength in microns (e.g., 0.532)
-  - `NA`: Numerical aperture (e.g., 1.2)
-  - `RI_bg`: Background refractive index (e.g., 1.336)
-  - `resolution`: [dx, dy, dz] spatial resolution in microns
+  - `NA`: Numerical aperture (e.g., 1.1)
+  - `RI_bg`: Background refractive index (e.g., 1.507)
   - `resolution_image`: [dx, dy] image pixel size in microns
-  - `crop_offset_micron`: [x, y] center offset in microns for FOV cropping
-  - `crop_fov_micron`: [x, y] field-of-view size in microns for cropping
-  - `vector_simulation`: Enable vector simulation (true/false)
-  - `use_abbe_sine`: Use Abbe sine condition (true/false)
-  - `use_abbe_correction`: Use Abbe correction (true/false)
-- **processing_parameters**: Processing options
+- **field_generator_condition**: Field processing options
   - `cutout_portion`: Fourier space cropping (0-0.5, typically 0.333)
   - `other_corner`: Use other FFT corner for peak search (true/false)
   - `conjugate_field`: Conjugate the retrieved field (true/false)
   - `normalidx`: Index of normal image for centering (1-based)
-  - `use_GPU`: Enable GPU acceleration (true/false)
-- **reconstruction_parameters**: Reconstruction options
-  - `zsize`: Z-dimension size for 3D reconstruction volume
+  - `crop_offset_micron`: [x, y] center offset in microns for FOV cropping
+  - `crop_fov_micron`: [x, y] field-of-view size in microns for cropping
+- **tomography_generator_condition**: Reconstruction options
+  - `resolution`: [dx, dy, dz] spatial resolution in microns for 3D reconstruction
+  - `zsize_micron`: Z-dimension size in microns for reconstruction volume
 - **sample_pairs**: Array of background-sample pairs to process
 
 ### 2. Run the Script
@@ -124,27 +120,23 @@ The reconstruction pipeline follows these steps:
 {
     "data_path": "F:\\Data\\merged_stacks",
     "output_path": "F:\\Data\\reconstruction_results",
-    "optical_parameters": {
+    "imaging_condition": {
         "wavelength": 0.532,
-        "NA": 1.2,
-        "RI_bg": 1.336,
-        "resolution": [0.1, 0.1, 0.1],
-        "resolution_image": [0.048, 0.192],
-        "crop_offset_micron": [10, 10],
-        "crop_fov_micron": [150, 150],
-        "vector_simulation": false,
-        "use_abbe_sine": true,
-        "use_abbe_correction": true
+        "NA": 1.1,
+        "RI_bg": 1.507,
+        "resolution_image": [0.048, 0.192]
     },
-    "processing_parameters": {
+    "field_generator_condition": {
         "cutout_portion": 0.333,
         "other_corner": false,
         "conjugate_field": false,
         "normalidx": 1,
-        "use_GPU": true
+        "crop_offset_micron": [10, 10],
+        "crop_fov_micron": [150, 150]
     },
-    "reconstruction_parameters": {
-        "zsize": 256
+    "tomography_generator_condition": {
+        "resolution": [0.1, 0.1, 0.7],
+        "zsize_micron": 154
     },
     "sample_pairs": [
         {

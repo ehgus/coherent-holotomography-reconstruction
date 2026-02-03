@@ -1,16 +1,29 @@
-classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
+classdef BACKWARD_SOLVER_RYTOV < handle
     properties (SetAccess = protected, Hidden = true)
+        parameters = struct(...
+            ... % device information 
+            'wavelength', 0.532, ...
+            'NA',1.2, ...
+            'RI_bg',1.336, ...
+            ... % calculation option
+            'size',[100 100 100], ...
+            'resolution',[0.1 0.1 0.1], ...
+            'use_GPU',true ...
+        );
         utility;
     end
     methods
         function h=BACKWARD_SOLVER_RYTOV(params)
-            h@BACKWARD_SOLVER(params);
+            if nargin==1
+                warning ('off','all');
+                h.parameters=update_struct(h.parameters, params);
+                warning ('on','all');
+            end
         end
         function [RI, ORytov]=solve(h,output_field,illum_k0)
             warning('off','all');
             h.utility=DERIVE_OPTICAL_TOOL(h.parameters);
             warning('on','all');
-            
             % check fields and parameters
             assert(ndims(output_field) == 3, 'You need to provide the field with 3 dimenssion : dim1 x dim2 x illuminationnumber')
             % ISSUE: mismatch size between output_field and RI -> resize output_field
@@ -42,11 +55,12 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
             ORytov=gpuArray(zeros(xsize,ysize,zsize,'single'));
             Count=gpuArray(zeros(xsize,ysize,zsize,'single')); 
             for i = 1:size(output_field,3)
+                % Extract rytov field
                 phase = unwrap_phase(angle(output_field(:,:,i)));
                 amp = abs(output_field(:,:,i));
                 UsRytov=squeeze(log(amp)+1i*phase);
-                UsRytov=fft2(UsRytov); % unit: (um^2)
-                
+                UsRytov=fft2(UsRytov);
+                % Rescale field
                 UsRytov=circshift(UsRytov,[f_dx(i) f_dy(i)]);
                 Fx=f_dx(i)-fx;Fy=f_dy(i)-fy;Fz=f_dz(i)-fz;
                 Uprime=kz/1i.*UsRytov(xind);% unit: (um^1) % kz is spatial frequency, so 2pi is multiplied for wave vector

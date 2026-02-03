@@ -1,31 +1,26 @@
-function [field, optical_params, illum_k0] = extract_complex_field(background_stack, sample_stack, optical_params, processing_params)
+function [field, optical_params, illum_k0] = extract_complex_field(background_stack, sample_stack, imaging_condition, field_generator_condition)
 % extract_complex_field Process background and sample field pairs for field retrieval
 %
 % Syntax:
-%   [field, updated_params, illum_k0] = extract_complex_field(background_stack, sample_stack, optical_params, processing_params)
+%   [field, updated_params, illum_k0] = extract_complex_field(background_stack, sample_stack, imaging_condition, field_generator_condition)
 %
 % Inputs:
 %   background_stack - 3D array of background images [height, width, num_images]
 %   sample_stack - 3D array of sample images [height, width, num_images]
-%   optical_params - Structure containing optical parameters:
+%   imaging_condition - Structure containing imaging parameters:
 %       .wavelength - Wavelength in microns
 %       .NA - Numerical aperture
 %       .RI_bg - Background refractive index
-%       .resolution - [dx, dy, dz] spatial resolution
-%       .resolution_image - [dx, dy] image resolution
-%       .vector_simulation - Boolean for vector field simulation
-%       .use_abbe_sine - Boolean for Abbe sine correction
-%       .use_abbe_correction - Boolean for Abbe correction
-%   processing_params - Structure containing processing parameters:
+%       .resolution_image - [dx, dy] image resolution in microns
+%   field_generator_condition - Structure containing field processing parameters:
 %       .cutout_portion - Portion to cut out for centering (0 to 0.5)
 %       .other_corner - Boolean to use other corner
 %       .conjugate_field - Boolean to conjugate fields
 %       .normalidx - Index of normal image
-%       .use_GPU - Boolean to use GPU acceleration
 %
 % Outputs:
 %   field - Processed sample field
-%   updated_params - Updated optical parameters
+%   optical_params - Updated optical parameters
 %   illum_k0 - Peak positions in Fourier space [2 x num_images]
 %
 % Description:
@@ -59,13 +54,13 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     [xsize, ysize, zsize] = size(input_field);
 
     % Step 2: Center the field in Fourier space
-    assert(1 <= processing_params.normalidx && processing_params.normalidx <= zsize, ...
+    assert(1 <= field_generator_condition.normalidx && field_generator_condition.normalidx <= zsize, ...
         'Normal index should be a valid z index');
 
-    search_band_1 = round(xsize*(1/2 - processing_params.cutout_portion)):round(xsize/2);
+    search_band_1 = round(xsize*(1/2 - field_generator_condition.cutout_portion)):round(xsize/2);
 
     normal_bg = zeros(xsize, ysize);
-    normal_bg(search_band_1, :) = input_field(search_band_1, :, processing_params.normalidx);
+    normal_bg(search_band_1, :) = input_field(search_band_1, :, field_generator_condition.normalidx);
 
     [~, linear_index] = max(abs(normal_bg(:)));
     [center_pos_1, center_pos_2] = ind2sub(size(normal_bg), linear_index);
@@ -75,12 +70,13 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     output_field = circshift(output_field, peak2origin);
 
     % Step 3: Create NA circle and crop
+    optical_params = imaging_condition;
     optical_params.size = [xsize, ysize, zsize];
 
     % Create frequency coordinates
-    kmax = optical_params.NA / optical_params.wavelength ;
-    dx = optical_params.resolution_image(1);
-    dy = optical_params.resolution_image(2);
+    kmax = imaging_condition.NA / imaging_condition.wavelength ;
+    dx = imaging_condition.resolution_image(1);
+    dy = imaging_condition.resolution_image(2);
 
     fx = (-xsize/2:xsize/2-1) / (xsize * dx);
     fy = (-ysize/2:ysize/2-1) / (ysize * dy);
@@ -107,7 +103,7 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 
     % Step 6: Phase correction
     field = output_field ./ input_field;
-    if processing_params.conjugate_field
+    if field_generator_condition.conjugate_field
         field = conj(field);
     end
 
@@ -115,9 +111,6 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     for jj = 1:size(field, 3)
         field(:, :, jj) = remove_abs_phase(field(:, :, jj));
     end
-
-    % Update parameters for output
-    optical_params.use_GPU = processing_params.use_GPU;
 end
 
 function complex_phase = remove_abs_phase(complex_phase)
