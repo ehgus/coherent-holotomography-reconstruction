@@ -53,7 +53,7 @@ Edit `config/smooth_TGV.json` (or create your own configuration file) to specify
   - `wavelength`: Illumination wavelength in microns (e.g., 0.532)
   - `NA`: Numerical aperture (e.g., 1.1)
   - `RI_bg`: Background refractive index (e.g., 1.507)
-  - `resolution_image`: [dx, dy] image pixel size in microns
+  - `resolution`: [dx, dy] image pixel size in microns
 - **field_generator_condition**: Field processing options
   - `cutout_portion`: Fourier space cropping (0-0.5, typically 0.333)
   - `other_corner`: Use other FFT corner for peak search (true/false)
@@ -122,7 +122,7 @@ The reconstruction pipeline follows these steps:
         "wavelength": 0.532,
         "NA": 1.1,
         "RI_bg": 1.507,
-        "resolution_image": [0.048, 0.192]
+        "resolution": [0.048, 0.192]
     },
     "field_generator_condition": {
         "cutout_portion": 0.333,

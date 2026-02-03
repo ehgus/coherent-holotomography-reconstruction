@@ -5,7 +5,7 @@
         "wavelength": 0.532,
         "NA": 1.1,
         "RI_bg": 1.507,
-        "resolution_image": [0.048, 0.192]
+        "resolution": [0.048, 0.192]
     },
     "field_generator_condition": {
         "cutout_portion": 0.333,

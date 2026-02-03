@@ -11,7 +11,7 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 %       .wavelength - Wavelength in microns
 %       .NA - Numerical aperture
 %       .RI_bg - Background refractive index
-%       .resolution_image - [dx, dy] image resolution in microns
+%       .resolution - [dx, dy] image resolution in microns
 %   field_generator_condition - Structure containing field processing parameters:
 %       .cutout_portion - Portion to cut out for centering (0 to 0.5)
 %       .other_corner - Boolean to use other corner
@@ -75,8 +75,8 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 
     % Create frequency coordinates
     kmax = imaging_condition.NA / imaging_condition.wavelength ;
-    dx = imaging_condition.resolution_image(1);
-    dy = imaging_condition.resolution_image(2);
+    dx = imaging_condition.resolution(1);
+    dy = imaging_condition.resolution(2);
 
     fx = (-xsize/2:xsize/2-1) / (xsize * dx);
     fy = (-ysize/2:ysize/2-1) / (ysize * dy);
