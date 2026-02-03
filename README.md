@@ -15,8 +15,7 @@ rytov_solver-matlab/
 │   ├── ht_reconstruction/
 │   │   ├── BACKWARD_SOLVER_RYTOV.m         # Rytov reconstruction solver
 │   │   ├── BACKWARD_SOLVER.m               # Standard reconstruction solver
-│   │   ├── potential2RI.m                  # Convert potential to refractive index
-│   │   └── update_struct.m                 # Utility for struct updates
+│   │   └── potential2RI.m                  # Convert potential to refractive index
 │   └── io/
 │       ├── load_bin_data.m                 # Load binary data
 │       ├── load_png_stack_data.m           # Load PNG stacks

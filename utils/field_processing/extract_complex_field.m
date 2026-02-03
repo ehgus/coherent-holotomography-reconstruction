@@ -71,7 +71,7 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 
     % Step 3: Create NA circle and crop
     optical_params = imaging_condition;
-    optical_params.size = [xsize, ysize, zsize];
+    optical_params.volume_size = [xsize, ysize, zsize];
 
     % Create frequency coordinates
     kmax = imaging_condition.NA / imaging_condition.wavelength ;

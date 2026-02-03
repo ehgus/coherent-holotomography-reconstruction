@@ -138,7 +138,7 @@ for pair_idx = 1:num_pairs
     
     % Create Rytov parameters from updated_params
     rytov_params = struct();
-    rytov_params.size = updated_params.size;
+    rytov_params.volume_size = updated_params.volume_size;
     rytov_params.wavelength = updated_params.wavelength;
     rytov_params.NA = updated_params.NA;
     rytov_params.RI_bg = updated_params.RI_bg;
@@ -147,7 +147,7 @@ for pair_idx = 1:num_pairs
     
     % Set reconstruction resolution and z-size from configuration
     rytov_params.resolution = config.tomography_generator_condition.resolution;
-    rytov_params.size(3) = round(config.tomography_generator_condition.zsize_micron / rytov_params.resolution(3));
+    rytov_params.volume_size(3) = round(config.tomography_generator_condition.zsize_micron / rytov_params.resolution(3));
 
     % ========================================================================
     % STEP 3: PERFORM RYTOV RECONSTRUCTION

@@ -1,24 +1,20 @@
 classdef BACKWARD_SOLVER_RYTOV < handle
-    properties (SetAccess = protected, Hidden = true)
-        parameters = struct(...
-            ... % device information 
-            'wavelength', 0.532, ...
-            'NA',1.2, ...
-            'RI_bg',1.336, ...
-            ... % calculation option
-            'size',[100 100 100], ...
-            'resolution',[0.1 0.1 0.1], ...
-            'use_GPU',true ...
-        );
-        utility;
+    properties
+        wavelength  % wavelength in micron
+        NA          % numerical aperture
+        RI_bg       % background refractive index
+        volume_size % reconstruction volume size [nx, ny, nz]
+        resolution  % reconstruction resolution in micron [dx, dy, dz]
+        use_GPU     % boolean to use GPU acceleration
     end
     methods
         function h=BACKWARD_SOLVER_RYTOV(params)
-            if nargin==1
-                warning ('off','all');
-                h.parameters=update_struct(h.parameters, params);
-                warning ('on','all');
-            end
+            h.wavelength = params.wavelength;
+            h.NA = params.NA;
+            h.RI_bg = params.RI_bg;
+            h.volume_size = params.volume_size;
+            h.resolution = params.resolution;
+            h.use_GPU = params.use_GPU;
         end
         function [RI, ORytov]=solve(h,output_field,illum_k0)
             % check fields and parameters
@@ -26,16 +22,16 @@ classdef BACKWARD_SOLVER_RYTOV < handle
             % ISSUE: mismatch size between output_field and RI -> resize output_field
 
             % Extract parameters
-            xsize = h.parameters.size(1);
-            ysize = h.parameters.size(2);
-            zsize = h.parameters.size(3);
+            xsize = h.volume_size(1);
+            ysize = h.volume_size(2);
+            zsize = h.volume_size(3);
 
             % Calculate fourier space resolution
-            k_res = 1 ./ (h.parameters.resolution .* h.parameters.size);
+            k_res = 1 ./ (h.resolution .* h.volume_size);
 
             % Calculate wavenumber parameters
-            k0_nm = h.parameters.RI_bg / h.parameters.wavelength;
-            kmax = h.parameters.NA / h.parameters.wavelength;
+            k0_nm = h.RI_bg / h.wavelength;
+            kmax = h.NA / h.wavelength;
 
             % Calculate fourier space coordinates for NA circle
             fx_coords = single((1:xsize) - (floor(xsize/2) + 1)) * k_res(1);
@@ -88,7 +84,7 @@ classdef BACKWARD_SOLVER_RYTOV < handle
             end
             ORytov(Count>0)=ORytov(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
             potential=gather(fftshift(ifftn(ORytov),3));
-            RI = potential2RI(potential*4*pi,h.parameters.wavelength,h.parameters.RI_bg);
+            RI = potential2RI(potential*4*pi,h.wavelength,h.RI_bg);
         end
     end
 end
