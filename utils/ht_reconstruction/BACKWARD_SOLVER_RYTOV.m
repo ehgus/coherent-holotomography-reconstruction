@@ -21,32 +21,45 @@ classdef BACKWARD_SOLVER_RYTOV < handle
             end
         end
         function [RI, ORytov]=solve(h,output_field,illum_k0)
-            warning('off','all');
-            h.utility=DERIVE_OPTICAL_TOOL(h.parameters);
-            warning('on','all');
             % check fields and parameters
             assert(ndims(output_field) == 3, 'You need to provide the field with 3 dimenssion : dim1 x dim2 x illuminationnumber')
             % ISSUE: mismatch size between output_field and RI -> resize output_field
 
-            %preset variables
-            kx_res = h.utility.fourier_space.res{1};
-            ky_res = h.utility.fourier_space.res{2};
-            kz_res = h.utility.fourier_space.res{3};
+            % Extract parameters
             xsize = h.parameters.size(1);
             ysize = h.parameters.size(2);
             zsize = h.parameters.size(3);
 
+            % Calculate fourier space resolution
+            k_res = 1 ./ (h.parameters.resolution .* h.parameters.size);
+
+            % Calculate wavenumber parameters
+            k0_nm = h.parameters.RI_bg / h.parameters.wavelength;
+            kmax = h.parameters.NA / h.parameters.wavelength;
+
+            % Calculate fourier space coordinates for NA circle
+            fx_coords = single((1:xsize) - (floor(xsize/2) + 1)) * k_res(1);
+            fy_coords = single((1:ysize) - (floor(ysize/2) + 1)) * k_res(2);
+            [FX, FY] = meshgrid(fy_coords, fx_coords);
+            coorxy = sqrt(FX.^2 + FY.^2);
+            NA_circle = coorxy < kmax;
+
+            % Calculate k3 (z-component of wavenumber)
+            k3 = (k0_nm).^2 - (coorxy).^2;
+            k3(k3 < 0) = 0;
+            k3 = sqrt(k3);
+
             %find angle
             f_dx = illum_k0(1,:);
             f_dy = illum_k0(2,:);
-            f_dz=round(real(sqrt((h.utility.k0_nm)^2-(f_dx*kx_res).^2-(f_dy*ky_res).^2))/kz_res);
+            f_dz=round(real(sqrt((k0_nm)^2-(f_dx*k_res(1)).^2-(f_dy*k_res(2)).^2))/k_res(3));
 
-            NA_circle = ifftshift(h.utility.NA_circle);
-            xind=find(NA_circle);
-            kz=ifftshift(reshape(h.utility.k3,xsize,ysize));
+            NA_circle_shift = ifftshift(NA_circle);
+            xind=find(NA_circle_shift);
+            kz=ifftshift(reshape(k3,xsize,ysize));
             fx=[0:floor((xsize-1)/2) -floor((xsize)/2):-1];
             fy=[0:floor((ysize-1)/2) -floor((ysize)/2):-1];
-            fz=round(kz/kz_res);
+            fz=round(kz/k_res(3));
             fx=fx(rem(xind-1,xsize)+1)';
             fy=fy(floor((xind-1)/xsize)+1)';
             fz=fz(xind);
@@ -73,7 +86,7 @@ classdef BACKWARD_SOLVER_RYTOV < handle
                 ORytov(Kzp)=ORytov(Kzp)+Uprime;
                 Count(Kzp)=Count(Kzp)+(Uprime~=0);
             end
-            ORytov(Count>0)=ORytov(Count>0)./Count(Count>0)/kz_res; % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
+            ORytov(Count>0)=ORytov(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
             potential=gather(fftshift(ifftn(ORytov),3));
             RI = potential2RI(potential*4*pi,h.parameters.wavelength,h.parameters.RI_bg);
         end

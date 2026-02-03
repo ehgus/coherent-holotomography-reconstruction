@@ -15,7 +15,6 @@ rytov_solver-matlab/
 │   ├── ht_reconstruction/
 │   │   ├── BACKWARD_SOLVER_RYTOV.m         # Rytov reconstruction solver
 │   │   ├── BACKWARD_SOLVER.m               # Standard reconstruction solver
-│   │   ├── DERIVE_OPTICAL_TOOL.m           # Optical tool derivation
 │   │   ├── potential2RI.m                  # Convert potential to refractive index
 │   │   └── update_struct.m                 # Utility for struct updates
 │   └── io/
