@@ -6,28 +6,14 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
         function h=BACKWARD_SOLVER_RYTOV(params)
             h@BACKWARD_SOLVER(params);
         end
-        function [RI, ORytov]=solve(h,input_field,output_field)
+        function [RI, ORytov]=solve(h,output_field,illum_k0)
             warning('off','all');
             h.utility=DERIVE_OPTICAL_TOOL(h.parameters);
             warning('on','all');
             
             % check fields and parameters
-            assert(ndims(input_field) == 4, 'You need to provide the field with 4 dimenssion : dim1 x dim2 x polarisation x illuminationnumber')
-            assert(size(input_field,1) == size(input_field,2), 'Please input a square field')
-            assert(isequal(size(input_field),size(output_field)), 'Please input field and bg of same size')
-            assert(h.parameters.resolution(1) == h.parameters.resolution(2), 'x/y input resolution must be isotropic')
-            assert(h.parameters.size(1) == h.parameters.size(2), 'x/y output size must be isotropic')
-            assert(h.parameters.size(1) == size(input_field,1) && h.parameters.size(2) == size(input_field,2), 'declare size in the parameter must be the same as the field size')
-            
-            retPhase=angle(output_field);
-            % WARNING: unwrapp2_gpu function is NOT copied to ht_reconstruction.
-            % This is a GPU phase unwrapping function from Goldstein branch-cut method.
-            % User must provide alternative implementation or copy the function separately.
-            % Expected input: gpuArray of phase values (single precision)
-            % Expected output: unwrapped phase on GPU (single precision)
-            retPhase=gather(unwrapp2_gpu(gpuArray(single(retPhase))));
-            retAmplitude=abs(output_field);
-            thetaSize=size(retPhase,3);
+            assert(ndims(output_field) == 3, 'You need to provide the field with 3 dimenssion : dim1 x dim2 x illuminationnumber')
+            % ISSUE: mismatch size between output_field and RI -> resize output_field
 
             %preset variables
             kx_res = h.utility.fourier_space.res{1};
@@ -36,19 +22,10 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
             xsize = h.parameters.size(1);
             ysize = h.parameters.size(2);
             zsize = h.parameters.size(3);
-            halfxsize = floor(xsize/2);
-            halfysize = floor(ysize/2);
 
             %find angle
-            f_dx=zeros(thetaSize,1);
-            f_dy=zeros(thetaSize,1);
-            for i=1:size(input_field,3)
-                Fbg=fft2(input_field(:,:,i));
-                [~,linear_index] = max(Fbg,[],'all','ComparisonMethod','abs');
-                [mj,mi]=ind2sub(size(Fbg),linear_index);
-                f_dx(i)=mj-xsize*floor(mj/halfxsize)-1;
-                f_dy(i)=mi-ysize*floor(mi/halfysize)-1;
-            end
+            f_dx = illum_k0(1,:);
+            f_dy = illum_k0(2,:);
             f_dz=round(real(sqrt((h.utility.k0_nm)^2-(f_dx*kx_res).^2-(f_dy*ky_res).^2))/kz_res);
 
             NA_circle = ifftshift(h.utility.NA_circle);
@@ -64,9 +41,11 @@ classdef BACKWARD_SOLVER_RYTOV < BACKWARD_SOLVER
 
             ORytov=gpuArray(zeros(xsize,ysize,zsize,'single'));
             Count=gpuArray(zeros(xsize,ysize,zsize,'single')); 
-            for i = 1:thetaSize
-                FRytov=squeeze(log(retAmplitude(:,:,i))+1i*retPhase(:,:,i));
-                UsRytov=fft2(FRytov); % unit: (um^2)
+            for i = 1:size(output_field,3)
+                phase = unwrap_phase(angle(output_field(:,:,i)));
+                amp = abs(output_field(:,:,i));
+                UsRytov=squeeze(log(amp)+1i*phase);
+                UsRytov=fft2(UsRytov); % unit: (um^2)
                 
                 UsRytov=circshift(UsRytov,[f_dx(i) f_dy(i)]);
                 Fx=f_dx(i)-fx;Fy=f_dy(i)-fy;Fz=f_dz(i)-fz;

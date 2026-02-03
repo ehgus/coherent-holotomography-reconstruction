@@ -160,7 +160,7 @@ for pair_idx = 1:num_pairs
     
     % Create Rytov solver and perform reconstruction
     rytov_solver = BACKWARD_SOLVER_RYTOV(rytov_params);
-    [RI, ~] = rytov_solver.solve(output_field);
+    [RI, ~] = rytov_solver.solve(output_field, illum_k0);
     
     % Clear field data to save memory
     clear output_field updated_params illum_k0;
