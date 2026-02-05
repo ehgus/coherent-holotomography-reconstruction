@@ -1,0 +1,3 @@
+clc;
+ 
+mex -output get_branches_goldstein_original get_branches_goldstein.cpp get_branches_goldstein_compute_original.cpp get_branches_goldstein_update.cpp;

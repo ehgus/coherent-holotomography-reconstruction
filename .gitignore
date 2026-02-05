@@ -1,6 +1,7 @@
 # MATLAB autosave files
 *.asv
 *.m~
+*.mex*64
 
 # MATLAB data files (results are typically large)
 *.mat

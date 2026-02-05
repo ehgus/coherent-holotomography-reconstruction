@@ -56,7 +56,12 @@ classdef BACKWARD_SOLVER_RYTOV < handle
             Count=zeros(xsize_3d,ysize_3d,zsize_3d,'single'); 
             for i = 1:size(output_field,3)
                 % Extract rytov field
-                phase = unwrap_phase(angle(output_field(:,:,i)));
+                wrapped_phase = angle(output_field(:,:,i));
+                % ad-hoc to work with current unwrapping function
+                wrapped_phase = padarray(wrapped_phase, [max(0,size(output_field,2)-size(output_field,1)), max(0,size(output_field,1)-size(output_field,2))], ...
+                                'replicate','post');
+                unwrapped_phase = gather(unwrapp2_gpu(gpuArray(single(wrapped_phase))));
+                phase = unwrapped_phase(1:size(output_field,1),1:size(output_field,2));
                 amp = abs(output_field(:,:,i));
                 UsRytov=squeeze(log(amp)+1i*phase);
                 UsRytov=gather(fft2(gpuArray(UsRytov)));
