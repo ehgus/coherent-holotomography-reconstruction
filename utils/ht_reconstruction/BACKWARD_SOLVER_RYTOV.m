@@ -1,89 +1,84 @@
 classdef BACKWARD_SOLVER_RYTOV < handle
     properties
-        wavelength  % wavelength in micron
-        NA          % numerical aperture
-        RI_bg       % background refractive index
-        volume_size % reconstruction volume size [nx, ny, nz]
-        resolution  % reconstruction resolution in micron [dx, dy, dz]
-        use_GPU     % boolean to use GPU acceleration
+        wavelength          % wavelength in micron
+        NA                  % numerical aperture
+        RI_bg               % background refractive index
+        field_resolution    % field image resolution in micron [dx, dy]
+        tomogram_size       % reconstruction volume size [nx, ny, nz]
+        tomogram_resolution % reconstruction resolution in micron [dx, dy, dz]
     end
     methods
         function h=BACKWARD_SOLVER_RYTOV(params)
             h.wavelength = params.wavelength;
             h.NA = params.NA;
             h.RI_bg = params.RI_bg;
-            h.volume_size = params.volume_size;
-            h.resolution = params.resolution;
-            h.use_GPU = params.use_GPU;
+            h.field_resolution = params.field_resolution;
+            h.tomogram_size = params.tomogram_size;
+            h.tomogram_resolution = params.tomogram_resolution;
         end
-        function [RI, ORytov]=solve(h,output_field,illum_k0)
+        function [RI, Count]=solve(h,output_field,illum_k0)
             % check fields and parameters
             assert(ndims(output_field) == 3, 'You need to provide the field with 3 dimenssion : dim1 x dim2 x illuminationnumber')
-            % ISSUE: mismatch size between output_field and RI -> resize output_field
 
-            % Extract parameters
-            xsize = h.volume_size(1);
-            ysize = h.volume_size(2);
-            zsize = h.volume_size(3);
-
-            % Calculate fourier space resolution
-            k_res = 1 ./ (h.resolution .* h.volume_size);
-
-            % Calculate wavenumber parameters
+            % Common information
+            k_res = 1 ./ (h.tomogram_resolution .* h.tomogram_size);
             k0_nm = h.RI_bg / h.wavelength;
             kmax = h.NA / h.wavelength;
+            illum_k0_3d = zeros(3,size(illum_k0,2),'single');
+            illum_k0_3d(1:2,:) = illum_k0;
+            illum_k0_3d(3,:) = round(real(sqrt((k0_nm)^2 - (illum_k0(1,:)*k_res(1)).^2 - (illum_k0(2,:)*k_res(2)).^2))/k_res(3));
 
+            % field-related information
+            xsize_2d = size(output_field,1);
+            ysize_2d = size(output_field,2);
             % Calculate fourier space coordinates for NA circle
-            fx_coords = single((1:xsize) - (floor(xsize/2) + 1)) * k_res(1);
-            fy_coords = single((1:ysize) - (floor(ysize/2) + 1)) * k_res(2);
-            [FX, FY] = meshgrid(fy_coords, fx_coords);
-            coorxy = sqrt(FX.^2 + FY.^2);
-            NA_circle = coorxy < kmax;
+            xcoords_2d = [0:floor((xsize_2d-1)/2) -floor(xsize_2d/2):-1]';
+            ycoords_2d = [0:floor((ysize_2d-1)/2) -floor(ysize_2d/2):-1];
+            kxy_coords_2d = sqrt((xcoords_2d *k_res(1)).^2 + (ycoords_2d * k_res(2)).^2);
+            NA_circle_2d = kxy_coords_2d < kmax;
+            valid_2d_indices = find(NA_circle_2d);
+            % Calculate kz (z-component of wavenumber)
+            kz = sqrt(max(0,(k0_nm).^2 - (kxy_coords_2d).^2));
+            kz=kz(valid_2d_indices);
 
-            % Calculate k3 (z-component of wavenumber)
-            k3 = (k0_nm).^2 - (coorxy).^2;
-            k3(k3 < 0) = 0;
-            k3 = sqrt(k3);
+            % tomogram-related information
+            xsize_3d = h.tomogram_size(1);
+            ysize_3d = h.tomogram_size(2);
+            zsize_3d = h.tomogram_size(3);
+            % 3D Fourier space indices
+            [xcoords_3d, ycoords_3d] = ind2sub([xsize_2d, ysize_2d], valid_2d_indices);
+            xcoords_3d(xcoords_3d > xsize_2d/2) = xcoords_3d(xcoords_3d > xsize_2d/2) + (xsize_3d - xsize_2d);
+            ycoords_3d(ycoords_3d > ysize_2d/2) = ycoords_3d(ycoords_3d > ysize_2d/2) + (ysize_3d - ysize_2d);
+            zcoords_3d=round(kz/k_res(3));
 
-            %find angle
-            f_dx = illum_k0(1,:);
-            f_dy = illum_k0(2,:);
-            f_dz=round(real(sqrt((k0_nm)^2-(f_dx*k_res(1)).^2-(f_dy*k_res(2)).^2))/k_res(3));
-
-            NA_circle_shift = ifftshift(NA_circle);
-            xind=find(NA_circle_shift);
-            kz=ifftshift(reshape(k3,xsize,ysize));
-            fx=[0:floor((xsize-1)/2) -floor((xsize)/2):-1];
-            fy=[0:floor((ysize-1)/2) -floor((ysize)/2):-1];
-            fz=round(kz/k_res(3));
-            fx=fx(rem(xind-1,xsize)+1)';
-            fy=fy(floor((xind-1)/xsize)+1)';
-            fz=fz(xind);
-            kz=kz(xind);
-
-            ORytov=gpuArray(zeros(xsize,ysize,zsize,'single'));
-            Count=gpuArray(zeros(xsize,ysize,zsize,'single')); 
+            % Map 2D field to 3D Fourier space
+            potential=zeros(xsize_3d,ysize_3d,zsize_3d,'single');
+            Count=zeros(xsize_3d,ysize_3d,zsize_3d,'single'); 
             for i = 1:size(output_field,3)
                 % Extract rytov field
                 phase = unwrap_phase(angle(output_field(:,:,i)));
                 amp = abs(output_field(:,:,i));
                 UsRytov=squeeze(log(amp)+1i*phase);
-                UsRytov=fft2(UsRytov);
+                UsRytov=gather(fft2(gpuArray(UsRytov)));
+                % Acquire 2D Fourier space indices
                 % Rescale field
-                UsRytov=circshift(UsRytov,[f_dx(i) f_dy(i)]);
-                Fx=f_dx(i)-fx;Fy=f_dy(i)-fy;Fz=f_dz(i)-fz;
-                Uprime=kz/1i.*UsRytov(xind);% unit: (um^1) % kz is spatial frequency, so 2pi is multiplied for wave vector
+                UsRytov=circshift(UsRytov,[illum_k0_3d(1:2,i)]);
                 
-                Fx=mod(Fx,xsize)+1;
-                Fy=mod(Fy,ysize)+1;
-                Fz=mod(Fz,zsize)+1;
-                Kzp=sub2ind(size(Count),Fx,Fy,Fz);
-
-                ORytov(Kzp)=ORytov(Kzp)+Uprime;
-                Count(Kzp)=Count(Kzp)+(Uprime~=0);
+                Uprime=kz/1i.*UsRytov(valid_2d_indices);% unit: (um^1) % kz is spatial frequency, so 2pi is multiplied for wave vector
+                % Acquire 3D Fourier space indices
+                Fx_3d=xcoords_3d-illum_k0_3d(1,i);
+                Fy_3d=ycoords_3d-illum_k0_3d(2,i);
+                Fz_3d=zcoords_3d-illum_k0_3d(3,i);
+                Fx_3d=mod(Fx_3d,xsize_3d)+1;
+                Fy_3d=mod(Fy_3d,ysize_3d)+1;
+                Fz_3d=mod(Fz_3d,zsize_3d)+1;
+                Kzp_3d=sub2ind(size(Count),Fx_3d,Fy_3d,Fz_3d);
+                % Accumulate into 3D Fourier space
+                potential(Kzp_3d)=potential(Kzp_3d)+Uprime;
+                Count(Kzp_3d)=Count(Kzp_3d)+(Uprime~=0);
             end
-            ORytov(Count>0)=ORytov(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
-            potential=gather(fftshift(ifftn(ORytov),3));
+            potential(Count>0)=potential(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
+            potential=gather(ifftn(gpuArray(potential)));
             RI = potential2RI(potential*4*pi,h.wavelength,h.RI_bg);
         end
     end

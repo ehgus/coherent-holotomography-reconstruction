@@ -11,7 +11,7 @@
 % Configuration file should contain:
 %   - data_path: Path to merged PNG stack data
 %   - output_path: Path for saving Rytov reconstruction results
-%   - imaging_condition: Imaging parameters (wavelength, NA, RI_bg, resolution_image)
+%   - imaging_condition: Imaging parameters (wavelength, NA, RI_bg, resolution)
 %   - field_generator_condition: Field processing options (cutout_portion, crop settings, etc.)
 %   - tomography_generator_condition: Reconstruction options (resolution, zsize_micron)
 %   - sample_pairs: Array of background-sample pairs to process
@@ -138,16 +138,15 @@ for pair_idx = 1:num_pairs
     
     % Create Rytov parameters from updated_params
     rytov_params = struct();
-    rytov_params.volume_size = updated_params.volume_size;
     rytov_params.wavelength = updated_params.wavelength;
     rytov_params.NA = updated_params.NA;
     rytov_params.RI_bg = updated_params.RI_bg;
-    rytov_params.resolution = updated_params.resolution;
-    rytov_params.use_GPU = updated_params.use_GPU;
+    rytov_params.field_resolution = updated_params.resolution;
     
     % Set reconstruction resolution and z-size from configuration
-    rytov_params.resolution = config.tomography_generator_condition.resolution;
-    rytov_params.volume_size(3) = round(config.tomography_generator_condition.zsize_micron / rytov_params.resolution(3));
+    tomogram_size_micron = [rytov_params.field_resolution .* [size(output_field, 1); size(output_field, 2)]; config.tomography_generator_condition.zsize_micron];
+    rytov_params.tomogram_size = round(tomogram_size_micron ./ config.tomography_generator_condition.resolution);
+    rytov_params.tomogram_resolution = tomogram_size_micron ./ rytov_params.tomogram_size;    
 
     % ========================================================================
     % STEP 3: PERFORM RYTOV RECONSTRUCTION
@@ -156,7 +155,7 @@ for pair_idx = 1:num_pairs
     
     % Create Rytov solver and perform reconstruction
     rytov_solver = BACKWARD_SOLVER_RYTOV(rytov_params);
-    [RI, ~] = rytov_solver.solve(output_field, illum_k0);
+    [RI, fourier_mask] = rytov_solver.solve(output_field, illum_k0);
     
     % Clear field data to save memory
     clear output_field updated_params illum_k0;
@@ -172,7 +171,7 @@ for pair_idx = 1:num_pairs
     end
     
     % Save Rytov reconstruction result ONLY (no field data saved)
-    save(rytov_file, 'RI', '-v7.3');
+    save(rytov_file, 'RI','fourier_mask', '-v7.3');
     
     elapsed_time = toc;
     

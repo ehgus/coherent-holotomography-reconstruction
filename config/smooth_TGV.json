@@ -17,7 +17,7 @@
     },
     "tomography_generator_condition": {
         "resolution": [0.1, 0.1, 0.7],
-        "zsize_micron": 154
+        "zsize_micron": 179.2
     },
     "sample_pairs": [
         {
