@@ -84,7 +84,7 @@ classdef BACKWARD_SOLVER_RYTOV < handle
                 Kzp_3d=sub2ind(size(Count),Fx_3d,Fy_3d,Fz_3d);
                 % Accumulate into 3D Fourier space
                 potential(Kzp_3d)=potential(Kzp_3d)+UsRytov_slice;
-                Count(Kzp_3d)=Count(Kzp_3d)+(UsRytov_slice~=0);
+                Count(Kzp_3d)=Count(Kzp_3d)+1;
             end
             potential(Count>0)=potential(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
             potential=gather(ifftn(gpuArray(potential)));
