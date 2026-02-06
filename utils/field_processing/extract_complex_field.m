@@ -107,24 +107,18 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     end
 
     % Subpixel phase shift correction
-    for jj = 1:size(field, 3)
-        field(:, :, jj) = remove_abs_phase(field(:, :, jj));
+    phase = angle(field);
+    % note: ad-hoc to work with current unwrapping function
+    padded_phase = padarray(phase, [max(0,size(field,2)-size(field,1)), max(0,size(field,1)-size(field,2)), 0], ...
+                        'replicate','post');
+    slice_step = 10;
+    for i = 1:ceil(size(padded_phase,3)/slice_step)
+        zslice_view = (1+slice_step*(i-1)):min(slice_step*i,size(padded_phase,3));
+        padded_phase(:,:,zslice_view) = gather(unwrapp2_gpu(gpuArray(single(padded_phase(:,:,zslice_view)))));
     end
-end
-
-function complex_phase = remove_abs_phase(complex_phase)
-    % Consider background position (negligible angle change)
-    illum_angle_map_x = angle(circshift(complex_phase,1,1)./complex_phase);
-    illum_angle_map_y = angle(circshift(complex_phase,1,2)./complex_phase);
-
-    % Correct absolute phase
-    naive_bg_mask = abs(illum_angle_map_x) < std(illum_angle_map_x,1,'all')/3 & ...
-                    abs(illum_angle_map_y) < std(illum_angle_map_y,1,'all')/3 & ...
-                    abs(complex_phase) < 1.2 & ...
-                    abs(complex_phase) > 0.8;
-    abs_angle = zeros(1,1,size(complex_phase,3));
-    for idx = 1:length(abs_angle)
-        abs_angle(idx) = angle(mean(complex_phase(naive_bg_mask(:,:,idx))));
+    phase = padded_phase(1:size(field,1),1:size(field,2),:);
+    for jj = 1:size(phase, 3)
+        phase(:, :, jj) = shift_phi(phase(:, :, jj),1,1);
     end
-    complex_phase = complex_phase .* exp(-1i * abs_angle);
+    field = abs(field) .* exp(1i * phase);
 end
