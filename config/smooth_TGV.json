@@ -12,12 +12,12 @@
         "other_corner": false,
         "conjugate_field": false,
         "normalidx": 1,
-        "crop_offset_micron": [10, 10],
-        "crop_fov_micron": [150, 150]
+        "crop_offset_micron": [9.984, 9.984],
+        "crop_fov_micron": [150.144, 150.144]
     },
     "tomography_generator_condition": {
-        "resolution": [0.1, 0.1, 0.7],
-        "zsize_micron": 179.2
+        "resolution": [0.096, 0.096, 0.5],
+        "zsize_micron": 150
     },
     "sample_pairs": [
         {

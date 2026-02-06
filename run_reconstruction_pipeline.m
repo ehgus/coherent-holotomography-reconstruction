@@ -108,7 +108,7 @@ for pair_idx = 1:num_pairs
     img_resolution = config.imaging_condition.resolution;
     img_pixel_size = [size(sample_stack, 1); size(sample_stack, 2)];
 
-    fov_min = round((offset - fov/2)./img_resolution + img_pixel_size/2);
+    fov_min = round((offset - fov/2)./img_resolution + img_pixel_size/2)+1;
     fov_max = round((offset + fov/2)./img_resolution + img_pixel_size/2);
 
     background_stack = background_stack(fov_min(1):fov_max(1),fov_min(2):fov_max(2),:);
