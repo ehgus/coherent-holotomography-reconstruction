@@ -1,7 +1,7 @@
-function [goodp2,mask, mdx, mdy,height]=PhiShiftMS(varargin)
+function [goodp2,mask, mdx, mdy,height]=shift_phi(varargin)
     % PhiShiftMS
         p2=varargin{1};
-        if length(varargin)==1
+        if isscalar(varargin)
             maskstyle=1;
         elseif length(varargin)==2
             maskstyle=varargin{2};
@@ -108,7 +108,9 @@ function [goodp2,coefficients]=D2_LSAms(varargin)
     % coefficient: [xn, xn-1,...x1,yn,yn-1,...y1,a0]
     % Except 0-padded map
         p2=varargin{1};
-        if length(varargin)==1
+        [imY, imX]=size(p2);
+        [XX, YY]=meshgrid(1:imX,1:imY);
+        if isscalar(varargin)
             n=1;
         end
         
@@ -130,9 +132,6 @@ function [goodp2,coefficients]=D2_LSAms(varargin)
             case 3
                 n=varargin{2};
                 mask=varargin{3};
-                
-                [imY, imX]=size(p2);
-                [XX, YY]=meshgrid(1:imX,1:imY);
 
                 p2mask=p2.*mask;
                 p2mask=omit_outliers(p2mask);
