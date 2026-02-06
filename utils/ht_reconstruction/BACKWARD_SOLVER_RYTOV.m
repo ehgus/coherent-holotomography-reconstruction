@@ -16,7 +16,7 @@ classdef BACKWARD_SOLVER_RYTOV < handle
             h.tomogram_size = params.tomogram_size;
             h.tomogram_resolution = params.tomogram_resolution;
         end
-        function [RI, Count]=solve(h,output_field,illum_k0)
+        function [potential, Count]=solve(h,output_field,illum_k0)
             % check fields and parameters
             assert(ndims(output_field) == 3, 'You need to provide the field with 3 dimenssion : dim1 x dim2 x illuminationnumber')
 
@@ -88,7 +88,6 @@ classdef BACKWARD_SOLVER_RYTOV < handle
             end
             potential(Count>0)=potential(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
             potential=gather(ifftn(gpuArray(potential)));
-            RI = potential2RI(potential*4*pi,h.wavelength,h.RI_bg);
         end
     end
 end

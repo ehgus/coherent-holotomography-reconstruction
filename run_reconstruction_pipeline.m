@@ -155,7 +155,8 @@ for pair_idx = 1:num_pairs
     
     % Create Rytov solver and perform reconstruction
     rytov_solver = BACKWARD_SOLVER_RYTOV(rytov_params);
-    [RI, fourier_mask] = rytov_solver.solve(output_field, illum_k0);
+    [potential, fourier_mask] = rytov_solver.solve(output_field, illum_k0);
+    RI = potential2RI(potential*4*pi, rytov_params.wavelength, rytov_params.RI_bg);
     
     % Clear field data to save memory
     clear output_field updated_params illum_k0;
@@ -176,7 +177,7 @@ for pair_idx = 1:num_pairs
     elapsed_time = toc;
     
     % Clear large variables to free memory
-    clear RI;
+    clear RI potential;
     
     fprintf(' - Done (%.1fs)\n', elapsed_time);
 end
