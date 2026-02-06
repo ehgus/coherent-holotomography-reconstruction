@@ -53,23 +53,27 @@ classdef BACKWARD_SOLVER_RYTOV < handle
 
             % Map 2D field to 3D Fourier space
             potential=zeros(xsize_3d,ysize_3d,zsize_3d,'single');
-            Count=zeros(xsize_3d,ysize_3d,zsize_3d,'single'); 
-            for i = 1:size(output_field,3)
-                % Extract rytov field
-                wrapped_phase = angle(output_field(:,:,i));
-                % ad-hoc to work with current unwrapping function
-                wrapped_phase = padarray(wrapped_phase, [max(0,size(output_field,2)-size(output_field,1)), max(0,size(output_field,1)-size(output_field,2))], ...
+            Count=zeros(xsize_3d,ysize_3d,zsize_3d,'single');
+            % Extract rytov field
+            phase = angle(output_field);
+            % note: ad-hoc to work with current unwrapping function
+            padded_phase = padarray(phase, [max(0,size(output_field,2)-size(output_field,1)), max(0,size(output_field,1)-size(output_field,2)), 0], ...
                                 'replicate','post');
-                unwrapped_phase = gather(unwrapp2_gpu(gpuArray(single(wrapped_phase))));
-                phase = unwrapped_phase(1:size(output_field,1),1:size(output_field,2));
-                amp = abs(output_field(:,:,i));
-                UsRytov=squeeze(log(amp)+1i*phase);
-                UsRytov=gather(fft2(gpuArray(UsRytov)));
+            slice_step = 10;
+            for i = 1:ceil(size(padded_phase,3)/slice_step)
+                zslice_view = (1+slice_step*(i-1)):min(slice_step*i,size(padded_phase,3));
+                padded_phase(:,:,zslice_view) = gather(unwrapp2_gpu(gpuArray(single(padded_phase(:,:,zslice_view)))));
+            end
+            phase = padded_phase(1:size(output_field,1),1:size(output_field,2),:);
+            amp = abs(output_field);
+            UsRytov=log(amp)+1i*phase;
+            UsRytov=gather(fft2(gpuArray(UsRytov)));
+            for i = 1:size(output_field,3)
                 % Acquire 2D Fourier space indices
                 % Rescale field
-                UsRytov=circshift(UsRytov,[illum_k0_3d(1:2,i)]);
+                UsRytov_slice=circshift(UsRytov(:,:,i),[illum_k0_3d(1:2,i)]);
                 
-                Uprime=kz/1i.*UsRytov(valid_2d_indices);% unit: (um^1) % kz is spatial frequency, so 2pi is multiplied for wave vector
+                UsRytov_slice=kz/1i.*UsRytov_slice(valid_2d_indices);% unit: (um^1) % kz is spatial frequency, so 2pi is multiplied for wave vector
                 % Acquire 3D Fourier space indices
                 Fx_3d=xcoords_3d-illum_k0_3d(1,i);
                 Fy_3d=ycoords_3d-illum_k0_3d(2,i);
@@ -79,8 +83,8 @@ classdef BACKWARD_SOLVER_RYTOV < handle
                 Fz_3d=mod(Fz_3d,zsize_3d)+1;
                 Kzp_3d=sub2ind(size(Count),Fx_3d,Fy_3d,Fz_3d);
                 % Accumulate into 3D Fourier space
-                potential(Kzp_3d)=potential(Kzp_3d)+Uprime;
-                Count(Kzp_3d)=Count(Kzp_3d)+(Uprime~=0);
+                potential(Kzp_3d)=potential(Kzp_3d)+UsRytov_slice;
+                Count(Kzp_3d)=Count(Kzp_3d)+(UsRytov_slice~=0);
             end
             potential(Count>0)=potential(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
             potential=gather(ifftn(gpuArray(potential)));
