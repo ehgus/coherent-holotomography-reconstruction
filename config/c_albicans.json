@@ -1,0 +1,29 @@
+{
+  "data_path": "F:\\02_project-000-Optiprep\\12_data\\02 Yeast",
+  "output_path": "F:\\02_project-000-Optiprep\\12_data\\02 Yeast",
+  "imaging_condition": {
+    "wavelength": 0.532,
+    "NA": 1.2,
+    "RI_bg": 1.354,
+    "resolution": [0.0994, 0.0994]
+  },
+  "field_generator_condition": {
+    "cutout_portion": 0.333,
+    "other_corner": false,
+    "conjugate_field": true,
+    "normalidx": 1,
+    "crop_offset_micron": [0, 0],
+    "crop_fov_micron": [50, 50]
+  },
+  "tomography_generator_condition": {
+    "resolution": [0.1, 0.1, 0.1],
+    "zsize_micron": 10
+  },
+  "sample_pairs": [
+    {
+      "background": "20180316.101546.308.Yeast_12x\\bgImages",
+      "sample": "20180316.101546.308.Yeast_12x\\data3d\\000000",
+      "output_name": "20180316.101546.308.Yeast_12x"
+    }
+  ]
+}
