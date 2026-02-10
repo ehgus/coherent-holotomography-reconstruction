@@ -127,7 +127,8 @@ for pair_idx = 1:num_pairs
         background_stack, ...
         sample_stack, ...
         config.imaging_condition, ...
-        config.field_generator_condition);
+        config.field_generator_condition, ...
+        config.tomography_generator_condition);
     % Clear stacks to save memory
     clear background_stack sample_stack;
     
@@ -143,10 +144,13 @@ for pair_idx = 1:num_pairs
     rytov_params.RI_bg = updated_params.RI_bg;
     rytov_params.field_resolution = updated_params.resolution;
     
-    % Set reconstruction resolution and z-size from configuration
-    tomogram_size_micron = [rytov_params.field_resolution .* [size(output_field, 1); size(output_field, 2)]; config.tomography_generator_condition.zsize_micron];
-    rytov_params.tomogram_size = round(tomogram_size_micron ./ config.tomography_generator_condition.resolution);
-    rytov_params.tomogram_resolution = tomogram_size_micron ./ rytov_params.tomogram_size;    
+    % Note: output_field XY dimensions are already resized to match tomography resolution
+    % Only need to set Z dimension based on configuration
+    rytov_params.tomogram_size = [size(output_field, 1); 
+                                  size(output_field, 2); 
+                                  round(config.tomography_generator_condition.zsize_micron / config.tomography_generator_condition.resolution(3))];                       
+    rytov_params.tomogram_resolution = [updated_params.resolution(:); 
+                                        config.tomography_generator_condition.resolution(3)];    
 
     % ========================================================================
     % STEP 3: PERFORM RYTOV RECONSTRUCTION

@@ -1,8 +1,8 @@
-function [field, optical_params, illum_k0] = extract_complex_field(background_stack, sample_stack, imaging_condition, field_generator_condition)
+function [field, optical_params, illum_k0] = extract_complex_field(background_stack, sample_stack, imaging_condition, field_generator_condition, tomography_generator_condition)
 % extract_complex_field Process background and sample field pairs for field retrieval
 %
 % Syntax:
-%   [field, updated_params, illum_k0] = extract_complex_field(background_stack, sample_stack, imaging_condition, field_generator_condition)
+%   [field, updated_params, illum_k0] = extract_complex_field(background_stack, sample_stack, imaging_condition, field_generator_condition, tomography_generator_condition)
 %
 % Inputs:
 %   background_stack - 3D array of background images [height, width, num_images]
@@ -17,9 +17,12 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 %       .other_corner - Boolean to use other corner
 %       .conjugate_field - Boolean to conjugate fields
 %       .normalidx - Index of normal image
+%   tomography_generator_condition - Structure containing tomography parameters:
+%       .resolution - Target resolution for tomogram [dx, dy, dz]
+%       .zsize_micron - Z-size in microns
 %
 % Outputs:
-%   field - Processed sample field
+%   field - Processed sample field (resized to tomography resolution)
 %   optical_params - Updated optical parameters
 %   illum_k0 - Peak positions in Fourier space [2 x num_images]
 %
@@ -28,6 +31,7 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 %   FIELD_EXPERIMENTAL_RETRIEVAL.m. It converts images to Fourier space,
 %   centers them, resizes to match desired resolution, crops according to NA,
 %   and converts back to real space with phase unwrapping.
+%   Finally, fields are resized to match tomography generator resolution.
 %
 % See also: FIELD_EXPERIMENTAL_RETRIEVAL
 
@@ -70,7 +74,6 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     output_field = circshift(output_field, peak2origin);
 
     % Step 3: Create NA circle and crop
-    optical_params = imaging_condition;
 
     % Create frequency coordinates
     kmax = imaging_condition.NA / imaging_condition.wavelength ;
@@ -94,6 +97,44 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
         [y_pos, x_pos, ~] = ind2sub(size(input_field(:, :, jj)), max_indices(jj));
         illum_k0(1, jj) = mod(y_pos + floor(xsize/2) - 1, xsize) - floor(xsize/2);
         illum_k0(2, jj) = mod(x_pos + floor(ysize/2) - 1, ysize) - floor(ysize/2);
+    end
+
+    % Step 4.5: Resize fourier images to match tomography generator resolution
+    % (before converting to real space)
+    if nargin >= 5 && ~isempty(tomography_generator_condition)
+        old_xsize = xsize;
+        old_ysize = ysize;
+        
+        % Calculate target size based on tomography resolution and current FOV
+        current_fov_x = xsize * imaging_condition.resolution(1);
+        current_fov_y = ysize * imaging_condition.resolution(2);
+        
+        % Calculate new size based on tomography resolution
+        xsize = 2 * round(current_fov_x / tomography_generator_condition.resolution(1) / 2);
+        ysize = 2 * round(current_fov_y / tomography_generator_condition.resolution(2) / 2);
+        
+        % Perform padding/cropping if size changed
+        if xsize ~= old_xsize || ysize ~= old_ysize
+            old_field = {input_field, output_field};
+            new_field = {zeros(xsize, ysize, zsize), zeros(xsize, ysize, zsize)};
+            half_xsize = floor(min([old_xsize xsize])/2);
+            half_ysize = floor(min([old_ysize ysize])/2);
+            
+            % Copy quadrants: top-left, top-right, bottom-left, bottom-right
+            for i = 1:2
+                new_field{i}(1:half_xsize, 1:half_ysize, :) = old_field{i}(1:half_xsize, 1:half_ysize, :);
+                new_field{i}(1:half_xsize, end-half_ysize+1:end, :) = old_field{i}(1:half_xsize, end-half_ysize+1:end, :);
+                new_field{i}(end-half_xsize+1:end, 1:half_ysize, :) = old_field{i}(end-half_xsize+1:end, 1:half_ysize, :);
+                new_field{i}(end-half_xsize+1:end, end-half_ysize+1:end, :) = old_field{i}(end-half_xsize+1:end, end-half_ysize+1:end, :);
+            end
+            
+            input_field = new_field{1};
+            output_field = new_field{2};
+            
+            % Update imaging condition resolution to reflect actual resolution after resize
+            imaging_condition.resolution(1) = current_fov_x / xsize;
+            imaging_condition.resolution(2) = current_fov_y / ysize;
+        end
     end
 
     % Step 5: Convert to real space
@@ -121,4 +162,7 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
         phase(:, :, jj) = shift_phi(phase(:, :, jj),1,1);
     end
     field = abs(field) .* exp(1i * phase);
+    
+    % Set output optical parameters
+    optical_params = imaging_condition;
 end
