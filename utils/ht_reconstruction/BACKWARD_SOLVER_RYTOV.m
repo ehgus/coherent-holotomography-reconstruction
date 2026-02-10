@@ -87,7 +87,7 @@ classdef BACKWARD_SOLVER_RYTOV < handle
                 Count(Kzp_3d)=Count(Kzp_3d)+1;
             end
             potential(Count>0)=potential(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
-            potential=gather(ifftn(gpuArray(potential)));
+            potential=fftshift(gather(ifftn(gpuArray(potential))),3);
         end
     end
 end
