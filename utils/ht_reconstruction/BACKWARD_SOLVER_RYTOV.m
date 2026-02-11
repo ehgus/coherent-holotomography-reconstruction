@@ -49,7 +49,7 @@ classdef BACKWARD_SOLVER_RYTOV < handle
             [xcoords_3d, ycoords_3d] = ind2sub([xsize_2d, ysize_2d], valid_2d_indices);
             xcoords_3d(xcoords_3d > xsize_2d/2) = xcoords_3d(xcoords_3d > xsize_2d/2) + (xsize_3d - xsize_2d);
             ycoords_3d(ycoords_3d > ysize_2d/2) = ycoords_3d(ycoords_3d > ysize_2d/2) + (ysize_3d - ysize_2d);
-            zcoords_3d=round(kz/k_res(3));
+            zcoords_3d=round(kz/k_res(3))+1;
 
             % Map 2D field to 3D Fourier space
             potential=zeros(xsize_3d,ysize_3d,zsize_3d,'single');
@@ -78,9 +78,9 @@ classdef BACKWARD_SOLVER_RYTOV < handle
                 Fx_3d=xcoords_3d-illum_k0_3d(1,i);
                 Fy_3d=ycoords_3d-illum_k0_3d(2,i);
                 Fz_3d=zcoords_3d-illum_k0_3d(3,i);
-                Fx_3d=mod(Fx_3d,xsize_3d)+1;
-                Fy_3d=mod(Fy_3d,ysize_3d)+1;
-                Fz_3d=mod(Fz_3d,zsize_3d)+1;
+                Fx_3d=mod(Fx_3d-1,xsize_3d)+1;
+                Fy_3d=mod(Fy_3d-1,ysize_3d)+1;
+                Fz_3d=mod(Fz_3d-1,zsize_3d)+1;
                 Kzp_3d=sub2ind(size(Count),Fx_3d,Fy_3d,Fz_3d);
                 % Accumulate into 3D Fourier space
                 potential(Kzp_3d)=potential(Kzp_3d)+UsRytov_slice;
