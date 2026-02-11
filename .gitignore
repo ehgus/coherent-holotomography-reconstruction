@@ -20,3 +20,6 @@ desktop.ini
 # Output directories (results should be stored elsewhere)
 output/
 results/
+
+# meatadata files
+*.json
