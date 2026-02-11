@@ -136,7 +136,15 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
             imaging_condition.resolution(2) = current_fov_y / ysize;
         end
     end
-
+    % refocus if needed
+    if isfield(field_generator_condition, 'refocus_z_micron') && field_generator_condition.refocus_z_micron ~= 0
+        z_shift = field_generator_condition.refocus_z_micron;
+        if field_generator_condition.conjugate_field
+            z_shift = -z_shift;
+        end
+        input_field = refocus_field_fourier_domain(input_field, z_shift, imaging_condition);
+        output_field = refocus_field_fourier_domain(output_field, z_shift, imaging_condition);
+    end
     % Step 5: Convert to real space
     input_field = ifft2(input_field);
     output_field = ifft2(output_field);

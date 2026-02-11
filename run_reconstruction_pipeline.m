@@ -119,7 +119,10 @@ for pair_idx = 1:num_pairs
     % ========================================================================
     fprintf(' -> Processing fields');
     tic;
-    
+    field_generator_condition = config.field_generator_condition;
+     if isfield(current_pair, 'refocus_z_micron') && current_pair.refocus_z_micron ~= 0
+        field_generator_condition.refocus_z_micron = current_pair.refocus_z_micron;
+     end
     % output_field: 3D [height x width x num_images] complex array
     % updated_params: updated optical parameters after field retrieval
     % k0s: wavenumber information for each illumination angle
@@ -127,7 +130,7 @@ for pair_idx = 1:num_pairs
         background_stack, ...
         sample_stack, ...
         config.imaging_condition, ...
-        config.field_generator_condition, ...
+        field_generator_condition, ...
         config.tomography_generator_condition);
     % Clear stacks to save memory
     clear background_stack sample_stack;
