@@ -160,7 +160,7 @@ for pair_idx = 1:num_pairs
     % Create Rytov solver and perform reconstruction
     rytov_solver = BACKWARD_SOLVER_RYTOV(rytov_params);
     [potential, fourier_mask] = rytov_solver.solve(output_field, illum_k0);
-    RI = potential2RI(potential*4*pi, rytov_params.wavelength, rytov_params.RI_bg);
+    RIreal = real(potential2RI(potential*4*pi, rytov_params.wavelength, rytov_params.RI_bg));
     
     % Clear field data to save memory
     clear output_field updated_params illum_k0;
@@ -176,12 +176,13 @@ for pair_idx = 1:num_pairs
     end
     
     % Save Rytov reconstruction result ONLY (no field data saved)
-    save(rytov_file, 'RI','fourier_mask', '-v7.3');
+    resolution = rytov_solver.tomogram_resolution;
+    save(rytov_file, 'potential', 'RIreal', 'resolution', 'fourier_mask', '-v7.3');
     
     elapsed_time = toc;
     
     % Clear large variables to free memory
-    clear RI potential;
+    clear RIreal potential fourier_mask;
     
     fprintf(' - Done (%.1fs)\n', elapsed_time);
 end
