@@ -53,8 +53,8 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     end
 
     % Step 1: Convert to Fourier space
-    input_field = fft2(input_field);
-    output_field = fft2(output_field);
+    input_field = gather(fft2(gpuArray(input_field)));
+    output_field = gather(fft2(gpuArray(output_field)));
     [xsize, ysize, zsize] = size(input_field);
 
     % Step 2: Center the field in Fourier space
@@ -63,7 +63,7 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
 
     search_band_1 = round(xsize*(1/2 - field_generator_condition.cutout_portion)):round(xsize/2);
 
-    normal_bg = zeros(xsize, ysize);
+    normal_bg = zeros(xsize, ysize, 'like', input_field);
     normal_bg(search_band_1, :) = input_field(search_band_1, :, field_generator_condition.normalidx);
 
     [~, linear_index] = max(abs(normal_bg(:)));
@@ -146,8 +146,8 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
         output_field = refocus_field_fourier_domain(output_field, z_shift, imaging_condition);
     end
     % Step 5: Convert to real space
-    input_field = ifft2(input_field);
-    output_field = ifft2(output_field);
+    input_field = gather(ifft2(gpuArray(input_field)));
+    output_field = gather(ifft2(gpuArray(output_field)));
 
     % Step 6: Phase correction
     field = output_field ./ input_field;
