@@ -145,6 +145,7 @@ function [field, optical_params, illum_k0] = extract_complex_field(background_st
     field = output_field ./ input_field;
     if field_generator_condition.conjugate_field
         field = conj(field);
+        illum_k0 = -illum_k0;
     end
 
     % Subpixel phase shift correction
