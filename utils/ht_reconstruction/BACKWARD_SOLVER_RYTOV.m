@@ -83,7 +83,7 @@ classdef BACKWARD_SOLVER_RYTOV < handle
                 potential(Kzp_3d)=potential(Kzp_3d)+UsRytov_slice;
                 Count(Kzp_3d)=Count(Kzp_3d)+1;
             end
-            potential(Count>0)=potential(Count>0)./Count(Count>0)/k_res(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
+            potential(Count>0)=potential(Count>0)./Count(Count>0)*h.tomogram_resolution(3); % should be (um^-2)*(px*py*pz), so (px*py*pz/um^3) should be multiplied.
             potential=fftshift(gather(ifftn(gpuArray(potential))),3);
         end
     end
