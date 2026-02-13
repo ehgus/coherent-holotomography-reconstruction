@@ -1,0 +1,3 @@
+[submodule "utils/total_variation"]
+	path = utils/total_variation
+	url = https://github.com/ehgus/simple-total-variation-proximal.git
