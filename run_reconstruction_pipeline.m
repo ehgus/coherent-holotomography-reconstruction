@@ -1,22 +1,22 @@
-%% Integrated Field Retrieval and Rytov Tomogram Reconstruction
-% Script to perform field retrieval followed by Rytov reconstruction in a single pipeline
+%% Integrated Field Retrieval and Tomogram Reconstruction
+% Script to perform field retrieval followed by Tomogram reconstruction in a single pipeline
 %
 % This script:
 % 1. Loads configuration from JSON file (e.g., smooth_TGV.json)
 % 2. Processes each background-sample pair specified in the configuration
 % 3. Performs field retrieval using extract_complex_field() (NOT saved)
-% 4. Applies Rytov reconstruction algorithm
-% 5. Saves only the final Rytov tomograms (RI.mat) to output directory
+% 4. Applies Tomogram reconstruction algorithm
+% 5. Saves only the final Tomograms (RI.mat) to output directory
 %
 % Configuration file should contain:
 %   - data_path: Path to merged PNG stack data
-%   - output_path: Path for saving Rytov reconstruction results
+%   - output_path: Path for saving Tomogram reconstruction results
 %   - imaging_condition: Imaging parameters (wavelength, NA, RI_bg, resolution)
 %   - field_generator_condition: Field processing options (cutout_portion, crop settings, etc.)
 %   - tomography_generator_condition: Reconstruction options (resolution, zsize_micron)
 %   - sample_pairs: Array of background-sample pairs to process
 %
-% Note: Field information is NOT saved to disk. Only the final Rytov tomogram (RI.mat)
+% Note: Field information is NOT saved to disk. Only the final Tomogram (RI.mat)
 %       is saved to config.output_path/sample_name/ directory.
 %
 % See also: extract_complex_field, BACKWARD_SOLVER_RYTOV
@@ -27,8 +27,8 @@ clc; clear; close all;
 current_dir = pwd();
 addpath(genpath(current_dir));
 
-fprintf('Integrated Field Retrieval and Rytov Tomogram Reconstruction\n');
-fprintf('Pipeline: PNG stacks -> extract_complex_field -> BACKWARD_SOLVER_RYTOV -> RI.mat\n\n');
+fprintf('Integrated Field Retrieval and Tomogram Reconstruction\n');
+fprintf('Pipeline: PNG stacks -> extract_complex_field -> BACKWARD_SOLVER -> RI.mat\n\n');
 
 %% Load configuration
 [config_file, config_path] = uigetfile('*.json', 'Select configuration file');
@@ -71,11 +71,11 @@ for pair_idx = 1:num_pairs
     current_pair = config.sample_pairs(pair_idx);
     fprintf('\n[%d/%d] %s', pair_idx, num_pairs, current_pair.output_name);
     
-    % Check if Rytov result already exists
+    % Check if Tomogram result already exists
     output_dir = fullfile(config.output_path, current_pair.output_name);
-    rytov_file = fullfile(output_dir, 'RI.mat');
+    tomogram_file = fullfile(output_dir, 'RI.mat');
     
-    if exist(rytov_file, 'file')
+    if exist(tomogram_file, 'file')
         fprintf(' - Skipped (RI.mat already exists)\n');
         continue;
     end
@@ -136,34 +136,34 @@ for pair_idx = 1:num_pairs
     clear background_stack sample_stack;
     
     % ========================================================================
-    % STEP 2: PREPARE RYTOV PARAMETERS
+    % STEP 2: PREPARE TOMOGRAM PARAMETERS
     % ========================================================================
-    fprintf(' -> Preparing Rytov reconstruction');
+    fprintf(' -> Preparing Tomogram reconstruction');
     
-    % Create Rytov parameters from updated_params
-    rytov_params = struct();
-    rytov_params.wavelength = updated_params.wavelength;
-    rytov_params.NA = updated_params.NA;
-    rytov_params.RI_bg = updated_params.RI_bg;
-    rytov_params.field_resolution = updated_params.resolution;
+    % Create Tomogram parameters from updated_params
+    tomo_params = struct();
+    tomo_params.wavelength = updated_params.wavelength;
+    tomo_params.NA = updated_params.NA;
+    tomo_params.RI_bg = updated_params.RI_bg;
+    tomo_params.field_resolution = updated_params.resolution;
     
     % Note: output_field XY dimensions are already resized to match tomography resolution
     % Only need to set Z dimension based on configuration
-    rytov_params.tomogram_size = [size(output_field, 1); 
+    tomo_params.tomogram_size = [size(output_field, 1); 
                                   size(output_field, 2); 
                                   round(config.tomography_generator_condition.zsize_micron / config.tomography_generator_condition.resolution(3))];                       
-    rytov_params.tomogram_resolution = [updated_params.resolution(:); 
+    tomo_params.tomogram_resolution = [updated_params.resolution(:); 
                                         config.tomography_generator_condition.resolution(3)];    
 
     % ========================================================================
-    % STEP 3: PERFORM RYTOV RECONSTRUCTION
+    % STEP 3: PERFORM TOMOGRAM RECONSTRUCTION
     % ========================================================================
-    fprintf(' -> Executing Rytov solver');
+    fprintf(' -> Executing Tomogram solver');
     
     % Create Rytov solver and perform reconstruction
-    rytov_solver = BACKWARD_SOLVER_RYTOV(rytov_params);
-    [potential, fourier_mask] = rytov_solver.solve(output_field, illum_k0);
-    RIreal = real(potential2RI(potential*4*pi, rytov_params.wavelength, rytov_params.RI_bg));
+    tomogram_solver = BACKWARD_SOLVER_RYTOV(tomo_params);
+    [potential, fourier_mask] = tomogram_solver.solve(output_field, illum_k0);
+    RIreal = real(potential2RI(potential*4*pi, tomo_params.wavelength, tomo_params.RI_bg));
     
     % Clear field data to save memory
     clear output_field updated_params illum_k0;
@@ -178,9 +178,9 @@ for pair_idx = 1:num_pairs
         mkdir(output_dir);
     end
     
-    % Save Rytov reconstruction result ONLY (no field data saved)
-    resolution = rytov_solver.tomogram_resolution;
-    save(rytov_file, 'potential', 'RIreal', 'resolution', 'fourier_mask', '-v7.3');
+    % Save Tomogram reconstruction result ONLY (no field data saved)
+    resolution = tomogram_solver.tomogram_resolution;
+    save(tomogram_file, 'potential', 'RIreal', 'resolution', 'fourier_mask', '-v7.3');
     
     elapsed_time = toc;
     
@@ -193,5 +193,5 @@ end
 %% Summary
 fprintf('\n========================================\n');
 fprintf('Complete. Results saved to: %s\n', config.output_path);
-fprintf('Files saved: RI.mat (Rytov tomogram only)\n');
+fprintf('Files saved: RI.mat (Tomogram only)\n');
 fprintf('========================================\n');
