@@ -64,7 +64,7 @@ for i = 1:length(sample_dirs)
     sample_path = fullfile(sample_dirs(i).folder, sample_dirs(i).name);
     
     % Check for existing reconstruction file
-    reconstruction_file = fullfile(sample_path, 'RI.mat');
+    reconstruction_file = fullfile(sample_path, 'RI_rytov.mat');
     if ~isfile(reconstruction_file)
         fprintf('[%d/%d] Skipping "%s" - RI.mat not found\n', i, length(sample_dirs), sample_dirs(i).name);
         continue;
