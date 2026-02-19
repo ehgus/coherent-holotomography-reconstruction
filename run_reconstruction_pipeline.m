@@ -23,8 +23,8 @@
 
 clc; clear; close all;
 
-%% Add paths based on pwd()
-current_dir = pwd();
+%% Add paths
+current_dir = fileparts(matlab.desktop.editor.getActiveFilename);
 addpath(genpath(current_dir));
 
 fprintf('Integrated Field Retrieval and Tomogram Reconstruction\n');
