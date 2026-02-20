@@ -147,7 +147,7 @@ function RIreal_optimized = apply_tv_optimization(RIreal, params, lims, backgrou
     Vreal_fourier_proj = Vreal_fourier(lims);
     lambda = params.lambda;
     w = lambda * params.tv_lambda;
-    tv_reg = LpTotalVariation(w, params.pval, params.internal_max_iter);
+    tv_reg = LpTotalVariation(w, params.pval, params.internal_max_iter, 1e-1 / w, run_on_gpu);
     t_np = 1;
     V_np = Vreal;
 
@@ -163,11 +163,8 @@ function RIreal_optimized = apply_tv_optimization(RIreal, params, lims, backgrou
         % start GPU calculation
         Vreal_fourier = gather(fftn(gpuArray(Vreal_optimized)));
         Vreal_fourier(lims) = (1-lambda) .* Vreal_fourier(lims) + lambda .* Vreal_fourier_proj;
-        Vreal_optimized = ifftn(gpuArray(Vreal_fourier), 'symmetric');
-        if ~run_on_gpu
-            Vreal_optimized = gather(Vreal_optimized);
-        end
-        
+        Vreal_optimized = gather(ifftn(gpuArray(Vreal_fourier), 'symmetric'));
+
         % Proximal step: apply TV regularization
         V_np(:) = gather(tv_reg.proximal(Vreal_optimized));
         % end GPU calculation
